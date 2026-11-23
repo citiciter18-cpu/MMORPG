@@ -703,12 +703,12 @@ canvas {
   color: #fecaca;
 }
 
-/* COMPACT CHAT BOX (LEFT SIDE ABOVE JOYSTICK) */
+/* COMPACT CHAT BOX (DIRECTLY RIGHT OF JOYSTICK, MATCHING SCREENSHOT) */
 .chat-box {
   position: absolute;
-  bottom: 144px;
-  left: 8px;
-  width: 235px;
+  bottom: 12px;
+  left: 138px;
+  width: 170px;
   display: flex;
   flex-direction: column;
   transform-origin: bottom left;
@@ -842,38 +842,31 @@ canvas {
   transform: translate(0px, 0px);
 }
 
-/* UNIFIED BOTTOM-CENTER CLASSIC HOTBAR (5 SKILLS + POTIONS + BAG + MOUNT + PARTY) */
+/* UNIFIED BOTTOM-CENTER CLASSIC 10-SLOT HOTBAR (MATCHING SCREENSHOT) */
 .hud-hotbar {
   position: absolute;
-  bottom: 10px;
+  bottom: 8px;
   left: 50%;
   transform: translateX(-50%) scale(var(--ui-scale));
   transform-origin: bottom center;
   display: flex;
   align-items: center;
-  gap: 5px;
-  padding: 5px 7px;
-  background: rgba(14, 20, 40, 0.92);
+  gap: 4px;
+  padding: 4px 6px;
+  background: rgba(13, 19, 38, 0.92);
   border: 2px solid #d9a438;
   border-radius: 10px;
 }
 .hud-skill-slots {
   display: flex;
   align-items: center;
-  gap: 5px;
-}
-.hotbar-divider {
-  width: 2px;
-  height: 36px;
-  background: rgba(230, 178, 68, 0.35);
-  border-radius: 2px;
-  margin: 0 2px;
+  gap: 4px;
 }
 .skill-slot-btn, .hotbar-util-btn {
   position: relative;
-  width: 46px;
-  height: 46px;
-  border-radius: 8px;
+  width: 42px;
+  height: 42px;
+  border-radius: 7px;
   background: linear-gradient(180deg, #213059, #101830);
   border: 2px solid #d9a438;
   display: flex;
@@ -885,8 +878,6 @@ canvas {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14);
 }
 .hotbar-util-btn {
-  width: 42px;
-  height: 42px;
   border-color: #5a72ab;
 }
 .hotbar-util-btn.active {
@@ -938,22 +929,22 @@ canvas {
   justify-content: center;
 }
 
-/* CLASSIC CIRCULAR ACTION PAD (BOTTOM-RIGHT) */
+/* CLASSIC CIRCULAR ACTION PAD (BOTTOM-RIGHT, MATCHING SCREENSHOT 170346) */
 .action-pad {
   position: absolute;
-  bottom: 12px;
-  right: 14px;
-  width: 170px;
-  height: 152px;
+  bottom: 10px;
+  right: 12px;
+  width: 204px;
+  height: 118px;
   transform-origin: bottom right;
   transform: scale(var(--ui-scale));
 }
 .act-attack-btn {
   position: absolute;
-  right: 2px;
-  bottom: 2px;
-  width: 78px;
-  height: 78px;
+  right: 0px;
+  bottom: 0px;
+  width: 82px;
+  height: 82px;
   border-radius: 50%;
   background: radial-gradient(circle at 35% 30%, #3b4f82, #182342 70%, #0d1429 100%);
   border: 3px solid #cbd5e1;
@@ -969,14 +960,14 @@ canvas {
 }
 .circle-act-btn {
   position: absolute;
-  width: 48px;
-  height: 48px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   background: radial-gradient(circle at 35% 30%, #273763, #111a33);
   border: 2px solid #728bc4;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
   color: #eef3ff;
-  font-size: 8.5px;
+  font-size: 8px;
   font-weight: 800;
   display: flex;
   flex-direction: column;
@@ -994,11 +985,11 @@ canvas {
   background: radial-gradient(circle at 35% 30%, #229954, #114b2a);
   color: #dcfce7;
 }
-/* Clean arc orbiting the big Attack button */
-.act-pos-auto     { right: 90px; bottom: 4px;  border-color: #38bdf8; }
-.act-pos-dash     { right: 92px; bottom: 58px; border-color: #c084fc; }
-.act-pos-interact { right: 52px; bottom: 96px; border-color: #fbbf24; }
-.act-pos-loot     { right: 0px;  bottom: 92px; border-color: #4ade80; }
+/* Exact horizontal bottom row beside Attack + clean pair above */
+.act-pos-auto     { right: 148px; bottom: 4px;  border-color: #38bdf8; }
+.act-pos-dash     { right: 94px;  bottom: 4px;  border-color: #c084fc; }
+.act-pos-interact { right: 148px; bottom: 58px; border-color: #fbbf24; width: 40px; height: 40px; }
+.act-pos-loot     { right: 96px;  bottom: 58px; border-color: #4ade80; width: 40px; height: 40px; }
 
 /* --- MODALS (EXACT MATCH TO SCREENSHOTS 170342 / 170346 / 170441) --- */
 .modal-overlay {

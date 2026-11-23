@@ -10,9 +10,9 @@
       name: 'Рыцарь Клинка',
       desc: 'Сбалансированный боец с мечом и крепкой бронёй.',
       weapon: 'sword',
-      armor: 'armor_knight',
-      helmet: 'helm_iron',
-      appearance: { hair: '#1a1b2e', cloak: '#b91c1c', armor: '#24293d' },
+      armor: null,
+      helmet: null,
+      appearance: { hair: '#151829', cloak: '#c81d32', armor: '#1f2438', skin: '#f7d5b0', eye: '#ef4444' },
       attributes: { str: 8, vit: 8, int: 4, agi: 5, lck: 5 },
       skillBar: ['crimson_slash', 'whirlwind', 'aegis_shield', 'wsp_1', 'wsp_2']
     },
@@ -21,8 +21,8 @@
       desc: 'Повелитель стихий с дальнобойным посохом и мощной магией.',
       weapon: 'staff',
       armor: 'armor_mage',
-      helmet: 'helm_leather',
-      appearance: { hair: '#38bdf8', cloak: '#7c3aed', armor: '#3b1f54' },
+      helmet: null,
+      appearance: { hair: '#38bdf8', cloak: '#7c3aed', armor: '#3b1f54', skin: '#f7d5b0', eye: '#38bdf8' },
       attributes: { str: 4, vit: 5, int: 10, agi: 5, lck: 6 },
       skillBar: ['fire_meteor', 'frost_nova', 'chain_lightning', 'wsp_1', 'wsp_2']
     },
@@ -30,9 +30,9 @@
       name: 'Тень Кинжала',
       desc: 'Молниеносные удары, высокий шанс крита и яды.',
       weapon: 'dagger',
-      armor: 'armor_tunic',
-      helmet: 'helm_crimson',
-      appearance: { hair: '#cbd5e1', cloak: '#0f172a', armor: '#3b1d2a' },
+      armor: null,
+      helmet: null,
+      appearance: { hair: '#151829', cloak: '#b91c1c', armor: '#271724', skin: '#f7d5b0', eye: '#ef4444' },
       attributes: { str: 6, vit: 5, int: 4, agi: 10, lck: 5 },
       skillBar: ['shadow_blink', 'poison_fan', 'shadow_dance', 'wsp_1', 'wsp_2']
     }
@@ -42,6 +42,7 @@
     return {
       started: false,
       player: {
+        isPlayer: true,
         name: 'Герой',
         classId: 'warrior',
         level: 1,
@@ -60,7 +61,7 @@
         skillPoints: 2,
         pvpRating: 1000,
         attributes: { str: 8, vit: 8, int: 4, agi: 5, lck: 5 },
-        appearance: { hair: '#1a1b2e', cloak: '#b91c1c', armor: '#24293d' },
+        appearance: { hair: '#151829', cloak: '#c81d32', armor: '#1f2438', skin: '#f7d5b0', eye: '#ef4444' },
         equipment: {
           helmet: null, armor: null, weapon: null, offhand: null,
           cloak: null, amulet: null, ring: null, boots: null, artifact: null
@@ -413,10 +414,11 @@
     p.appearance = Object.assign({}, cls.appearance);
     p.skillBar = cls.skillBar.slice();
 
-    // Equip starter gear
+    // Equip starter gear (keep classic hero hair & dark-crimson look visible)
+    p.isPlayer = true;
     p.equipment.weapon = window.GameData.createWeaponItem(cls.weapon, 'common', 1, 0, 1);
-    p.equipment.armor = window.GameData.createArmorItem(cls.armor, 'common', 1, 0, 1);
-    p.equipment.helmet = window.GameData.createArmorItem(cls.helmet, 'common', 1, 0, 1);
+    if (cls.armor) p.equipment.armor = window.GameData.createArmorItem(cls.armor, 'common', 1, 0, 1);
+    if (cls.helmet) p.equipment.helmet = window.GameData.createArmorItem(cls.helmet, 'common', 1, 0, 1);
 
     // Starter bag: gathering tools T1 + potions
     window.MMO.addItemToBag(window.GameData.createToolItem('axe', 1, 'common'));
@@ -439,6 +441,7 @@
     window.GameState = createDefaultState();
     const gs = window.GameState;
     if (data.player) Object.assign(gs.player, data.player);
+    gs.player.isPlayer = true;
     if (!gs.player.attributes) gs.player.attributes = { str: 6, vit: 6, int: 5, agi: 5, lck: 5 };
     if (!gs.player.appearance) gs.player.appearance = { hair: '#1a1b2e', cloak: '#b91c1c', armor: '#24293d' };
     if (!gs.player.equipment) gs.player.equipment = {};
@@ -504,7 +507,7 @@
       const rps = window.Multiplayer.getRemotePlayers();
       let bestRp = null, bestD = 320;
       for (const rp of rps) {
-        if (!rp.pvpEnabled || rp.hp <= 0 || window.Multiplayer.isInMyParty(rp.id)) continue;
+        if ((!rp.pvp && !rp.pvpEnabled) || rp.hp <= 0 || window.Multiplayer.isInMyParty(rp.id)) continue;
         if (window.World.getBiomeAt(rp.x, rp.y).safe) continue;
         const d = Math.hypot(rp.x - p.x, rp.y - p.y);
         if (d < bestD) { bestD = d; bestRp = rp; }
@@ -1062,12 +1065,13 @@
     const c = document.getElementById('hudPortraitCanvas');
     if (!c) return;
     const g = c.getContext('2d');
+    g.imageSmoothingEnabled = false;
     g.clearRect(0, 0, c.width, c.height);
     g.save();
-    g.translate(24, 34);
+    g.translate(26, 36);
     const p = window.GameState.player;
     window.Sprites.drawCharacter(g, {
-      x: 0, y: 0, facingX: 1, state: 'idle',
+      x: 0, y: 0, facingX: 1, state: 'idle', hideNameplate: true,
       appearance: p.appearance, equipment: p.equipment, mountedId: null, name: ''
     }, 0);
     g.restore();
@@ -1079,18 +1083,19 @@
     const c = document.getElementById('startHeroPreview');
     if (!c) return;
     const g = c.getContext('2d');
+    g.imageSmoothingEnabled = false;
     g.clearRect(0, 0, c.width, c.height);
     const cls = STARTER_CLASSES[selectedClass] || STARTER_CLASSES.warrior;
     g.save();
     g.translate(72, 92);
     g.scale(2.1, 2.1);
     window.Sprites.drawCharacter(g, {
-      x: 0, y: 0, facingX: 1, state: 'idle',
+      x: 0, y: 0, facingX: 1, state: 'idle', isPlayer: true, hideNameplate: true,
       appearance: cls.appearance,
       equipment: {
         weapon: window.GameData.createWeaponItem(cls.weapon, 'rare', 1, 0, 1),
-        armor: window.GameData.createArmorItem(cls.armor, 'rare', 1, 0, 1),
-        helmet: window.GameData.createArmorItem(cls.helmet, 'rare', 1, 0, 1)
+        armor: cls.armor ? window.GameData.createArmorItem(cls.armor, 'rare', 1, 0, 1) : null,
+        helmet: cls.helmet ? window.GameData.createArmorItem(cls.helmet, 'rare', 1, 0, 1) : null
       },
       mountedId: null, name: ''
     }, animTime);
@@ -1165,8 +1170,9 @@
     const onlineEl = document.getElementById('hudOnlineBadge');
     if (window.Multiplayer) {
       const ms = window.Multiplayer.getStatus();
-      const cnt = (ms.remoteCount || 0) + 1;
-      onlineEl.textContent = ms.connected ? ('Онлайн: ' + cnt) : 'Офлайн';
+      const isConn = ms.status === 'connected';
+      const cnt = ms.onlineCount || ((ms.remoteCount || 0) + 1);
+      onlineEl.textContent = isConn ? ('Онлайн: ' + cnt) : (ms.status === 'connecting' ? 'Подкл...' : 'Офлайн');
     }
     document.getElementById('hudFps').textContent = lastFps + ' FPS';
 
@@ -1433,26 +1439,14 @@
     cam.x = Math.max(0, Math.min(window.World.WIDTH - cam.w, p.x - cam.w / 2)) + sx;
     cam.y = Math.max(0, Math.min(window.World.HEIGHT - cam.h, p.y - cam.h / 2)) + sy;
 
-    // Render World
+    // Render World (crisp pixel art + proper drawWorldCombat pipeline)
+    ctx.imageSmoothingEnabled = false;
     ctx.clearRect(0, 0, cam.w, cam.h);
     ctx.save();
     ctx.translate(-Math.round(cam.x), -Math.round(cam.y));
 
     window.World.drawBackground(ctx, cam.x, cam.y, cam.w, cam.h, animTime);
     window.World.drawPropsAndNpcs(ctx, cam.x, cam.y, cam.w, cam.h, animTime);
-
-    // Ground loots
-    window.Combat.groundLoots.forEach(gl => {
-      if (gl.x < cam.x - 40 || gl.x > cam.x + cam.w + 40 || gl.y < cam.y - 40 || gl.y > cam.y + cam.h + 40) return;
-      window.Sprites.drawGroundLoot(ctx, gl, animTime);
-    });
-
-    // Monsters
-    window.Combat.monsters.forEach(m => {
-      if (m.dead) return;
-      if (m.x < cam.x - 90 || m.x > cam.x + cam.w + 90 || m.y < cam.y - 90 || m.y > cam.y + cam.h + 90) return;
-      window.Sprites.drawMonster(ctx, m, animTime);
-    });
 
     // Smart Bots
     window.Bots.drawAll(ctx, cam.x, cam.y, cam.w, cam.h, animTime);
@@ -1470,8 +1464,8 @@
       window.TelegramStars.drawAdminBot(ctx, animTime);
     }
 
-    // Combat VFX & Floating Damage Numbers
-    window.Combat.drawWorldCombat(ctx);
+    // Telegraphs, Ground Loot (with player proximity labels), Monsters, Projectiles, VFX & Floating Damage Numbers
+    window.Combat.drawWorldCombat(ctx, cam.x, cam.y, cam.w, cam.h, animTime);
 
     ctx.restore();
 
