@@ -249,7 +249,7 @@
   }
 
   function setUiScale(scale) {
-    const s = Math.max(0.75, Math.min(1.25, Number(scale) || 1));
+    const s = Math.max(0.65, Math.min(1.30, Number(scale) || 0.9));
     window.GameState.settings.uiScale = s;
     document.documentElement.style.setProperty('--ui-scale', String(s));
     const label = document.getElementById('btnQuickScaleText');
@@ -316,15 +316,25 @@
   }
 
   function applyHudPreset(preset) {
-    if (preset === 'compact') setUiScale(0.84);
-    else if (preset === 'large') setUiScale(1.12);
-    else setUiScale(1.0);
     resetHudLayout();
-    window.UI.toast('Применён пресет HUD: ' + preset);
+    const hud = document.getElementById('hudLayer');
+    if (hud) hud.classList.toggle('hud-lefty', preset === 'lefty');
+    if (preset === 'arcade') {
+      setUiScale(1.05);
+      window.UI.toast('Применён пресет HUD: Аркада');
+    } else if (preset === 'lefty') {
+      setUiScale(0.9);
+      window.UI.toast('Применён пресет HUD: Левша');
+    } else {
+      setUiScale(window.innerWidth < 860 ? 0.85 : 0.95);
+      window.UI.toast('Применён пресет HUD: Стандарт');
+    }
   }
 
   function resetHudLayout() {
     localStorage.removeItem(HUD_LAYOUT_KEY);
+    const hud = document.getElementById('hudLayer');
+    if (hud) hud.classList.remove('hud-lefty');
     document.querySelectorAll('[data-hud-drag]').forEach(el => {
       el.style.left = '';
       el.style.top = '';
@@ -465,7 +475,8 @@
     document.getElementById('startScreen').classList.add('hidden');
     document.getElementById('hudLayer').classList.remove('hidden');
     rebuildSkillBar();
-    setUiScale(window.GameState.settings.uiScale || 1);
+    const defScale = window.innerWidth < 860 ? 0.82 : 0.95;
+    setUiScale(window.GameState.settings.uiScale || defScale);
     loadHudLayout();
     if (window.TelegramStars) window.TelegramStars.syncAdminBotEntity(true);
     window.MMO.addChat('system', 'Мир', 'Добро пожаловать в BladeRealm! Сейф монет — кнопка «Банк».');
@@ -899,7 +910,7 @@
       window.GameState.pvpEnabled = !window.GameState.pvpEnabled;
       window.UI.toast(window.GameState.pvpEnabled ? 'Режим PvP ВКЛЮЧЁН! Вне города вас могут атаковать.' : 'Режим PvP ВЫКЛЮЧЕН (Мирный).');
     };
-    const scaleSteps = [0.85, 1.0, 1.15];
+    const scaleSteps = [0.75, 0.85, 1.0, 1.15];
     document.getElementById('btnQuickScale').onclick = () => {
       const cur = window.GameState.settings.uiScale || 1;
       const next = scaleSteps.find(s => s > cur + 0.02) || scaleSteps[0];
@@ -951,7 +962,9 @@
       };
     });
     document.getElementById('btnToggleChat').onclick = () => {
-      document.getElementById('chatBox').classList.toggle('collapsed');
+      const box = document.getElementById('chatBox');
+      box.classList.toggle('collapsed');
+      document.getElementById('btnToggleChat').textContent = box.classList.contains('collapsed') ? '+' : '_';
     };
     const sendChat = () => {
       const inp = document.getElementById('chatInput');
@@ -969,14 +982,21 @@
       if (e.key === 'Enter') sendChat();
     });
 
-    // Action buttons
+    // Action buttons & unified hotbar utility buttons
     document.getElementById('btnAttack').onclick = doPrimaryAttack;
     document.getElementById('btnAutoCombat').onclick = () => {
       window.GameState.autoCombat = !window.GameState.autoCombat;
       document.getElementById('btnAutoCombat').classList.toggle('active', window.GameState.autoCombat);
       window.UI.toast(window.GameState.autoCombat ? 'Автобой ВКЛЮЧЁН' : 'Автобой ВЫКЛЮЧЕН');
     };
-    document.getElementById('btnToggleMount').onclick = toggleMount;
+    document.getElementById('btnToggleMount').onclick = () => {
+      toggleMount();
+      document.getElementById('btnToggleMount').classList.toggle('active', !!window.GameState.player.mountedId);
+    };
+    const bagBtn = document.getElementById('btnHotbarBag');
+    if (bagBtn) bagBtn.onclick = () => window.UI.openModal('inventory');
+    const socBtn = document.getElementById('btnHotbarSocial');
+    if (socBtn) socBtn.onclick = () => window.UI.openModal('tradeHub');
     document.getElementById('btnDash').onclick = doDash;
     document.getElementById('btnLootAll').onclick = () => {
       const c = window.Combat.lootNearby(150);
@@ -1153,9 +1173,9 @@
     const hpPct = Math.max(0, Math.min(100, (p.hp / Math.max(1, p.maxHp)) * 100));
     const mpPct = Math.max(0, Math.min(100, (p.mp / Math.max(1, p.maxMp)) * 100));
     document.getElementById('hudHpBar').style.width = hpPct + '%';
-    document.getElementById('hudHpText').textContent = Math.round(p.hp) + ' / ' + Math.round(p.maxHp);
+    document.getElementById('hudHpText').textContent = 'HP: ' + Math.round(p.hp) + ' / ' + Math.round(p.maxHp);
     document.getElementById('hudMpBar').style.width = mpPct + '%';
-    document.getElementById('hudMpText').textContent = Math.round(p.mp) + ' / ' + Math.round(p.maxMp);
+    document.getElementById('hudMpText').textContent = 'MP: ' + Math.round(p.mp) + ' / ' + Math.round(p.maxMp);
     document.getElementById('hudGold').textContent = Math.floor(p.gold).toLocaleString('ru-RU');
     document.getElementById('hudPower').textContent = st.power;
 

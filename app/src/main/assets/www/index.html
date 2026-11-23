@@ -69,11 +69,11 @@
 
   <!-- IN-GAME HUD LAYER -->
   <div id="hudLayer" class="hud-layer hidden">
-    <!-- TOP-LEFT: PLAYER CARD -->
+    <!-- TOP-LEFT: PLAYER CARD (Ornate Portrait + Circle Level + HP/MP/Gold) -->
     <div id="hudPlayerCard" class="hud-player-card pixel-frame" data-hud-drag="playerCard">
       <div class="hud-portrait-wrap">
-        <canvas id="hudPortraitCanvas" width="48" height="48"></canvas>
-        <div id="hudLevel" class="hud-level-badge">Ур.<span id="hudLevelNum">1</span></div>
+        <canvas id="hudPortraitCanvas" width="52" height="52"></canvas>
+        <div id="hudLevel" class="hud-level-circle"><span id="hudLevelNum">1</span></div>
       </div>
       <div class="hud-player-info">
         <div class="hud-name-row">
@@ -85,17 +85,17 @@
         </div>
         <div class="bar-track hud-hp-track">
           <div id="hudHpBar" class="bar-fill hp-fill" style="width:100%;"></div>
-          <span id="hudHpText" class="bar-text">150 / 150</span>
+          <span id="hudHpText" class="bar-text">HP: 180 / 180</span>
         </div>
         <div class="bar-track hud-mp-track">
           <div id="hudMpBar" class="bar-fill mp-fill" style="width:100%;"></div>
-          <span id="hudMpText" class="bar-text">80 / 80</span>
+          <span id="hudMpText" class="bar-text">MP: 90 / 90</span>
         </div>
         <div class="hud-currency-row">
           <div class="hud-gold-pill">
             <img class="px-ico px-ico-xs" data-px-icon="coin" data-px-size="16" alt="" />
-            <span id="hudGold">250</span>
-            <button id="hudShopPlus" class="hud-plus-btn" title="Магазин / Донат">+</button>
+            <span id="hudGold">350</span>
+            <button id="hudShopPlus" class="hud-plus-btn" title="Донат Telegram Stars">+</button>
           </div>
           <div class="hud-power-pill">
             <img class="px-ico px-ico-xs" data-px-icon="weapons" data-px-size="14" alt="" />
@@ -110,7 +110,7 @@
       <div id="questTracker" class="quest-tracker pixel-frame">
         <button id="toggleQuestTracker" class="quest-tracker-head">
           <span>
-            <img class="px-ico px-ico-xs" data-px-icon="diamond_quest" data-px-size="14" alt="" />
+            <img class="px-ico px-ico-xs" data-px-icon="diamond_quest" data-px-size="15" alt="" />
             Задания
           </span>
           <span id="questChevron">v</span>
@@ -121,7 +121,7 @@
       <div id="partyWidget" class="party-widget pixel-frame hidden">
         <div class="party-widget-head">
           <span>
-            <img class="px-ico px-ico-xs" data-px-icon="party" data-px-size="14" alt="" />
+            <img class="px-ico px-ico-xs" data-px-icon="party" data-px-size="15" alt="" />
             Отряд (Пати)
           </span>
           <button id="btnLeaveParty" class="pixel-btn btn-sm btn-crimson">Выйти</button>
@@ -130,39 +130,39 @@
       </div>
     </div>
 
-    <!-- TOP-CENTER: NAVIGATION BAR -->
-    <div class="top-nav-bar pixel-frame" data-hud-drag="topNav">
-      <button class="nav-ico-btn" data-modal="map" title="Карта мира">
-        <img class="px-ico px-ico-sm" data-px-icon="map" data-px-size="22" alt="" />
+    <!-- TOP-CENTER: CLASSIC SQUARE ICON TILES BAR -->
+    <div class="top-nav-bar" data-hud-drag="topNav">
+      <button class="nav-tile-btn" data-modal="map" title="Карта мира">
+        <img class="px-ico px-ico-md" data-px-icon="map" data-px-size="26" alt="" />
         <span>Карта</span>
       </button>
-      <button class="nav-ico-btn" data-modal="quests" title="Задания">
-        <img class="px-ico px-ico-sm" data-px-icon="quests" data-px-size="22" alt="" />
-        <span>Квесты</span>
+      <button class="nav-tile-btn" data-modal="quests" title="Задания">
+        <img class="px-ico px-ico-md" data-px-icon="quests" data-px-size="26" alt="" />
+        <span>Задания</span>
         <span id="badgeQuests" class="nav-badge hidden">!</span>
       </button>
-      <button class="nav-ico-btn" data-modal="inventory" title="Сумка">
-        <img class="px-ico px-ico-sm" data-px-icon="inventory" data-px-size="22" alt="" />
-        <span>Сумка</span>
+      <button class="nav-tile-btn" data-modal="economy" title="Биржа и Экономика">
+        <img class="px-ico px-ico-md" data-px-icon="coin" data-px-size="26" alt="" />
+        <span>Биржа</span>
       </button>
-      <button class="nav-ico-btn" data-modal="bank" title="Банк монет">
-        <img class="px-ico px-ico-sm" data-px-icon="storage" data-px-size="22" alt="" />
+      <button class="nav-tile-btn" data-modal="bank" title="Банк монет (Сейф)">
+        <img class="px-ico px-ico-md" data-px-icon="storage" data-px-size="26" alt="" />
         <span>Банк</span>
       </button>
-      <button class="nav-ico-btn" data-modal="auction" title="Онлайн Аукцион">
-        <img class="px-ico px-ico-sm" data-px-icon="auction" data-px-size="22" alt="" />
+      <button class="nav-tile-btn" data-modal="shop" title="Магазин">
+        <img class="px-ico px-ico-md" data-px-icon="shop" data-px-size="26" alt="" />
+        <span>Магазин</span>
+      </button>
+      <button class="nav-tile-btn" data-modal="auction" title="Онлайн Аукцион">
+        <img class="px-ico px-ico-md" data-px-icon="auction" data-px-size="26" alt="" />
         <span>Аукцион</span>
       </button>
-      <button class="nav-ico-btn" data-modal="tradeHub" title="Онлайн игроки, Обмен и Пати">
-        <img class="px-ico px-ico-sm" data-px-icon="trade" data-px-size="22" alt="" />
-        <span>Онлайн</span>
+      <button class="nav-tile-btn" data-modal="tradeHub" title="Обмен, Онлайн и Пати">
+        <img class="px-ico px-ico-md" data-px-icon="trade" data-px-size="26" alt="" />
+        <span>Обмен</span>
       </button>
-      <button class="nav-ico-btn" data-modal="donate" title="Донат Telegram Stars">
-        <img class="px-ico px-ico-sm" data-px-icon="tg_star" data-px-size="22" alt="" />
-        <span>Stars</span>
-      </button>
-      <button class="nav-ico-btn" data-modal="menu" title="Главное меню">
-        <img class="px-ico px-ico-sm" data-px-icon="menu" data-px-size="22" alt="" />
+      <button class="nav-tile-btn" data-modal="menu" title="Главное меню">
+        <img class="px-ico px-ico-md" data-px-icon="menu" data-px-size="26" alt="" />
         <span>Меню</span>
         <span id="badgeMenu" class="nav-badge hidden">!</span>
       </button>
@@ -175,7 +175,7 @@
         <span id="bossBannerName" class="boss-banner-name">Босс</span>
         <span id="bossBannerSub" class="boss-banner-sub">Мировой Босс</span>
       </div>
-      <div class="bar-track" style="height:12px;">
+      <div class="bar-track" style="height:13px;">
         <div id="bossBannerFill" class="bar-fill boss-fill" style="width:100%;"></div>
         <span id="bossBannerText" class="bar-text">0 / 0</span>
       </div>
@@ -191,29 +191,29 @@
 
     <!-- TOP-RIGHT: MINIMAP & QUICK TOGGLES -->
     <div id="minimapBox" class="minimap-box pixel-frame" data-hud-drag="minimap">
-      <canvas id="minimapCanvas" width="128" height="84"></canvas>
+      <canvas id="minimapCanvas" width="136" height="88"></canvas>
       <div class="minimap-meta">
-        <span id="hudZoneName">Площадь Аэтельгарда</span>
-        <span id="hudCoords">820, 620</span>
+        <span id="hudZoneName">Столица Аэтельгард</span>
+        <span id="hudCoords">3950, 3000</span>
       </div>
       <div class="minimap-tools">
         <button id="btnAdminPanel" class="mini-tool-btn gold hidden" title="Админ-Панель">
           <img class="px-ico px-ico-xs" data-px-icon="admin_bot" data-px-size="14" alt="" />
           <span>Админ</span>
         </button>
-        <button id="btnTogglePvp" class="mini-tool-btn" title="Переключить PvP режим">
+        <button id="btnTogglePvp" class="mini-tool-btn" title="Переключить PvP">
           <img class="px-ico px-ico-xs" data-px-icon="pvp" data-px-size="14" alt="" />
-          <span id="btnTogglePvpText">PvP: ВЫКЛ</span>
+          <span id="btnTogglePvpText">PvP</span>
         </button>
         <button id="btnQuickScale" class="mini-tool-btn" title="Масштаб интерфейса">
           <img class="px-ico px-ico-xs" data-px-icon="scale" data-px-size="14" alt="" />
-          <span id="btnQuickScaleText">100%</span>
+          <span id="btnQuickScaleText">85%</span>
         </button>
       </div>
     </div>
 
-    <!-- BOTTOM-LEFT: CHAT -->
-    <div id="chatBox" class="chat-box pixel-frame" data-hud-drag="chatBox">
+    <!-- COMPACT CHAT BOX (LEFT SIDE ABOVE JOYSTICK) -->
+    <div id="chatBox" class="chat-box pixel-frame collapsed" data-hud-drag="chatBox">
       <div class="chat-header">
         <div class="chat-tabs">
           <button class="chat-tab active" data-ch="all">Все</button>
@@ -222,7 +222,7 @@
           <button class="chat-tab" data-ch="trade">Торг</button>
           <button class="chat-tab" data-ch="clan">Клан</button>
         </div>
-        <button id="btnToggleChat" class="chat-toggle-btn" title="Свернуть чат">_</button>
+        <button id="btnToggleChat" class="chat-toggle-btn" title="Развернуть / свернуть чат">+</button>
       </div>
       <div id="chatMessages" class="chat-messages"></div>
       <div class="chat-input-row">
@@ -231,58 +231,59 @@
       </div>
     </div>
 
-    <!-- BOTTOM-LEFT: VIRTUAL JOYSTICK -->
+    <!-- BOTTOM-LEFT: CLASSIC VIRTUAL JOYSTICK -->
     <div id="joystickZone" class="joystick-zone" data-hud-drag="joystick">
       <div class="joystick-base">
+        <div class="joystick-ring"></div>
         <div id="joystickKnob" class="joystick-knob"></div>
       </div>
     </div>
 
-    <!-- BOTTOM-CENTER: POTIONS & SKILL SLOTS -->
-    <div class="hud-skills-cluster" data-hud-drag="skillBar">
-      <div class="quick-pots-col">
-        <button id="btnQuickHpPot" class="pot-btn" title="Зелье здоровья">
-          <img class="px-ico px-ico-sm" data-px-icon="hp_vial" data-px-size="22" alt="" />
-          <span id="hpPotQty" class="pot-qty">0</span>
-        </button>
-        <button id="btnQuickMpPot" class="pot-btn" title="Зелье маны">
-          <img class="px-ico px-ico-sm" data-px-icon="mp_vial" data-px-size="22" alt="" />
-          <span id="mpPotQty" class="pot-qty">0</span>
-        </button>
-      </div>
+    <!-- BOTTOM-CENTER: UNIFIED CLASSIC SKILL + UTILITY HOTBAR -->
+    <div id="hudHotbar" class="hud-hotbar pixel-frame" data-hud-drag="skillBar">
       <div id="hudSkillSlots" class="hud-skill-slots"></div>
+      <div class="hotbar-divider"></div>
+      <button id="btnQuickHpPot" class="hotbar-util-btn" title="Зелье здоровья">
+        <img class="px-ico px-ico-md" data-px-icon="hp_vial" data-px-size="26" alt="" />
+        <span id="hpPotQty" class="pot-qty">0</span>
+      </button>
+      <button id="btnQuickMpPot" class="hotbar-util-btn" title="Зелье маны">
+        <img class="px-ico px-ico-md" data-px-icon="mp_vial" data-px-size="26" alt="" />
+        <span id="mpPotQty" class="pot-qty">0</span>
+      </button>
+      <button id="btnHotbarBag" class="hotbar-util-btn" title="Инвентарь">
+        <img class="px-ico px-ico-md" data-px-icon="inventory" data-px-size="26" alt="" />
+      </button>
+      <button id="btnToggleMount" class="hotbar-util-btn" title="Призвать маунта">
+        <img class="px-ico px-ico-md" data-px-icon="mounts" data-px-size="26" alt="" />
+      </button>
+      <button id="btnHotbarSocial" class="hotbar-util-btn" title="Онлайн игроки и Пати">
+        <img class="px-ico px-ico-md" data-px-icon="party" data-px-size="26" alt="" />
+      </button>
     </div>
 
-    <!-- BOTTOM-RIGHT: COMBAT & ACTION PAD -->
-    <div class="action-pad" data-hud-drag="actionPad">
-      <div class="action-sub-row">
-        <button id="btnAutoCombat" class="act-mini-btn" title="Автобой">
-          <img class="px-ico px-ico-sm" data-px-icon="auto_slash" data-px-size="20" alt="" />
-          <span>Авто</span>
-        </button>
-        <button id="btnToggleMount" class="act-mini-btn" title="Призвать маунта">
-          <img class="px-ico px-ico-sm" data-px-icon="mounts" data-px-size="20" alt="" />
-          <span>Маунт</span>
-        </button>
-        <button id="btnDash" class="act-mini-btn" title="Рывок">
-          <img class="px-ico px-ico-sm" data-px-icon="dash_boot" data-px-size="20" alt="" />
-          <span>Рывок</span>
-          <div id="dashCdOverlay" class="cd-overlay hidden"></div>
-        </button>
-      </div>
-      <div class="action-main-row">
-        <button id="btnLootAll" class="act-side-btn" title="Собрать лут">
-          <img class="px-ico px-ico-sm" data-px-icon="loot_gem" data-px-size="22" alt="" />
-          <span>Лут</span>
-        </button>
-        <button id="btnInteract" class="act-side-btn" title="Взаимодействие / Добыча">
-          <img class="px-ico px-ico-sm" data-px-icon="pickaxe" data-px-size="22" alt="" />
-          <span>Сбор</span>
-        </button>
-        <button id="btnAttack" class="act-attack-btn" title="Атака">
-          <img class="px-ico px-ico-lg" data-px-icon="attack_sword" data-px-size="36" alt="" />
-        </button>
-      </div>
+    <!-- BOTTOM-RIGHT: CLASSIC CIRCULAR ACTION PAD -->
+    <div id="actionPad" class="action-pad" data-hud-drag="actionPad">
+      <button id="btnAutoCombat" class="circle-act-btn act-pos-auto" title="Автобой">
+        <img class="px-ico px-ico-sm" data-px-icon="auto_slash" data-px-size="22" alt="" />
+        <span>Авто</span>
+      </button>
+      <button id="btnDash" class="circle-act-btn act-pos-dash" title="Рывок">
+        <img class="px-ico px-ico-sm" data-px-icon="dash_boot" data-px-size="22" alt="" />
+        <span>Рывок</span>
+        <div id="dashCdOverlay" class="cd-overlay hidden"></div>
+      </button>
+      <button id="btnInteract" class="circle-act-btn act-pos-interact" title="Сбор / NPC / Рыбалка">
+        <img class="px-ico px-ico-sm" data-px-icon="pickaxe" data-px-size="22" alt="" />
+        <span>Сбор</span>
+      </button>
+      <button id="btnLootAll" class="circle-act-btn act-pos-loot" title="Подобрать лут">
+        <img class="px-ico px-ico-sm" data-px-icon="loot_gem" data-px-size="22" alt="" />
+        <span>Лут</span>
+      </button>
+      <button id="btnAttack" class="act-attack-btn" title="Атака">
+        <img class="px-ico px-ico-lg" data-px-icon="attack_sword" data-px-size="40" alt="" />
+      </button>
     </div>
   </div>
 
@@ -294,7 +295,7 @@
           <img id="modalIcon" class="px-ico px-ico-md" alt="" />
           <h2 id="modalTitle" class="modal-title">Меню</h2>
         </div>
-        <button id="btnCloseModal" class="pixel-btn btn-sm btn-crimson">X</button>
+        <button id="btnCloseModal" class="modal-close-btn" aria-label="Закрыть">&times;</button>
       </div>
       <div id="modalBody" class="modal-body"></div>
     </div>
@@ -308,7 +309,7 @@
           <img id="subModalIcon" class="px-ico px-ico-sm" alt="" />
           <h3 id="subModalTitle" class="modal-title">Детали</h3>
         </div>
-        <button id="btnCloseSubModal" class="pixel-btn btn-sm btn-crimson">X</button>
+        <button id="btnCloseSubModal" class="modal-close-btn" aria-label="Закрыть">&times;</button>
       </div>
       <div id="subModalBody" class="modal-body"></div>
     </div>
