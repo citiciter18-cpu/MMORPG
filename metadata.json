@@ -1,6 +1,6 @@
 {
-  "name": "Vortex Arena",
-  "description": "3D WebGL multiplayer arena FPS shooter powered by HTML5 and Supabase Realtime (Broadcast, Presence, and Postgres leaderboard).",
+  "name": "BladeRealm",
+  "description": "2D pixel-art MMORPG with 10 biomes, 23 weapon types, Supabase Realtime multiplayer (party, direct trade, live auction, tactical PvP), coin bank, Telegram Stars donate, and hardcore death loot.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

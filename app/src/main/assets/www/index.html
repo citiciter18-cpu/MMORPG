@@ -3,189 +3,371 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <title>Vortex Arena — 3D Multiplayer FPS (Supabase)</title>
+  <meta name="theme-color" content="#0a0f1f" />
+  <title>BladeRealm — 2D Pixel MMORPG</title>
   <link rel="stylesheet" href="css/style.css" />
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 <body>
-  <div id="game-root">
-    <canvas id="gl-canvas"></canvas>
-    <canvas id="overlay-canvas"></canvas>
-
-    <!-- Damage directional flash & low-HP vignette -->
-    <div id="damage-vignette"></div>
-    <div id="hit-direction-ring"></div>
-
-    <!-- Railgun ADS Scope Overlay -->
-    <div id="scope-overlay" class="hidden">
-      <div class="scope-circle">
-        <div class="scope-line-h"></div>
-        <div class="scope-line-v"></div>
-        <div class="scope-dot"></div>
-        <div class="scope-label">LR-7 OPTICS · 3.5X</div>
+  <!-- START / CHARACTER CREATION SCREEN -->
+  <div id="startScreen" class="start-screen">
+    <div class="start-card pixel-frame">
+      <div class="start-header">
+        <img class="px-ico px-ico-lg" data-px-icon="weapons" data-px-size="36" alt="" />
+        <div>
+          <h1 class="start-title">BLADEREALM</h1>
+          <div class="start-subtitle">2D PIXEL MMORPG • ОНЛАЙН • PvP • АУКЦИОН • БАНК</div>
+        </div>
+        <img class="px-ico px-ico-lg" data-px-icon="crown" data-px-size="36" alt="" />
       </div>
-    </div>
 
-    <!-- Top HUD Bar -->
-    <header id="hud-top">
-      <div class="hud-left-cluster">
-        <canvas id="minimap-canvas" width="116" height="116"></canvas>
-        <div class="match-pill">
-          <div class="pill-row">
-            <span id="net-dot" class="status-dot offline"></span>
-            <span id="hud-mode-label">ПОЛИГОН</span>
+      <div class="start-body">
+        <div class="start-preview-col pixel-inset">
+          <canvas id="startHeroPreview" width="144" height="144"></canvas>
+          <div id="startClassTitle" class="start-class-title">Рыцарь Клинка</div>
+          <div id="startClassDesc" class="start-class-desc">Сбалансированный боец с мечом и крепкой бронёй.</div>
+        </div>
+
+        <div class="start-form-col">
+          <label class="start-label" for="heroNameInput">Имя героя</label>
+          <input id="heroNameInput" class="modal-input" type="text" maxlength="16" placeholder="Введите имя..." value="Герой" />
+
+          <div class="start-label" style="margin-top:8px;">Стартовый класс</div>
+          <div id="classPicker" class="class-picker">
+            <button class="class-opt active" data-cls="warrior">
+              <img class="px-ico px-ico-md" data-px-icon="weapons" data-px-size="24" alt="" />
+              <span>Воин</span>
+            </button>
+            <button class="class-opt" data-cls="mage">
+              <img class="px-ico px-ico-md" data-px-icon="skills" data-px-size="24" alt="" />
+              <span>Маг</span>
+            </button>
+            <button class="class-opt" data-cls="assassin">
+              <img class="px-ico px-ico-md" data-px-icon="sk_shadow_blink" data-px-size="24" alt="" />
+              <span>Ассасин</span>
+            </button>
           </div>
-          <div class="pill-sub">
-            <span id="hud-room-code">ARENA-01</span>
-            <span>·</span>
-            <span id="hud-players-count">1 ИГРОК</span>
-            <span id="hud-ping"></span>
+
+          <div class="start-features">
+            <span>10 Биомов</span>
+            <span>23 Оружия T1–T8</span>
+            <span>Онлайн Пати и Обмен</span>
+            <span>PvP Лут и Банк</span>
           </div>
-        </div>
-      </div>
 
-      <div class="hud-center-score">
-        <div class="stat-chip">
-          <span class="stat-k">K</span>
-          <span id="hud-kills">0</span>
-        </div>
-        <div class="stat-divider">/</div>
-        <div class="stat-chip">
-          <span class="stat-k">D</span>
-          <span id="hud-deaths">0</span>
-        </div>
-        <div id="hud-streak-badge" class="streak-badge hidden">x2</div>
-      </div>
-
-      <div class="hud-right-cluster">
-        <button id="btn-scoreboard" class="hud-icon-btn" type="button" aria-label="Таблица счета">
-          TAB
-        </button>
-        <button id="btn-lobby" class="hud-icon-btn danger" type="button" aria-label="Выход в лобби">
-          ЛОББИ
-        </button>
-      </div>
-    </header>
-
-    <!-- Kill Feed -->
-    <div id="kill-feed"></div>
-
-    <!-- Center Dynamic Crosshair -->
-    <div id="crosshair">
-      <span class="ch-tick top"></span>
-      <span class="ch-tick right"></span>
-      <span class="ch-tick bottom"></span>
-      <span class="ch-tick left"></span>
-      <span class="ch-dot"></span>
-      <div id="hitmarker" class="hidden">
-        <span class="hm-a"></span>
-        <span class="hm-b"></span>
-      </div>
-    </div>
-
-    <!-- Center Notification Toast (Jump Pad / Reload / Elimination) -->
-    <div id="center-banner" class="hidden"></div>
-
-    <!-- Bottom Status HUD -->
-    <div id="hud-bottom">
-      <div class="vital-card">
-        <div class="vital-header">
-          <span class="vital-tag">HP</span>
-          <span id="hud-hp-num" class="vital-num">100</span>
-        </div>
-        <div class="vital-bar-track">
-          <div id="hud-hp-bar" class="vital-bar-fill hp"></div>
-        </div>
-        <div class="vital-bar-track shield-track">
-          <div id="hud-shield-bar" class="vital-bar-fill shield"></div>
-        </div>
-      </div>
-
-      <div id="weapon-bar">
-        <button class="weapon-slot active" data-weapon="rifle" type="button">
-          <span class="slot-idx">1</span>
-          <span class="slot-name">VX-9</span>
-        </button>
-        <button class="weapon-slot" data-weapon="shotgun" type="button">
-          <span class="slot-idx">2</span>
-          <span class="slot-name">SG-4</span>
-        </button>
-        <button class="weapon-slot" data-weapon="railgun" type="button">
-          <span class="slot-idx">3</span>
-          <span class="slot-name">LR-7</span>
-        </button>
-      </div>
-
-      <div class="ammo-card">
-        <div id="hud-weapon-name" class="weapon-title">VX-9 ИМПУЛЬС</div>
-        <div class="ammo-row">
-          <span id="hud-ammo-mag" class="ammo-mag">30</span>
-          <span class="ammo-sep">/</span>
-          <span id="hud-ammo-res" class="ammo-res">120</span>
-        </div>
-        <div id="reload-progress-track" class="hidden">
-          <div id="reload-progress-bar"></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Touch Controls Layer (works on mobile & emulator touch) -->
-    <div id="touch-layer">
-      <div id="move-zone">
-        <div id="joy-base" class="hidden">
-          <div id="joy-knob"></div>
-        </div>
-        <div class="zone-hint" id="move-hint">ДВИЖЕНИЕ</div>
-      </div>
-      <div id="look-zone">
-        <div class="zone-hint" id="look-hint">ОБЗОР</div>
-      </div>
-
-      <div id="action-cluster">
-        <button id="btn-ads" class="tact-btn small" type="button">ПРИЦЕЛ</button>
-        <button id="btn-reload" class="tact-btn small" type="button">R</button>
-        <button id="btn-jump" class="tact-btn medium" type="button">ПРЫЖОК</button>
-        <button id="btn-fire" class="tact-btn fire" type="button">ОГОНЬ</button>
-      </div>
-    </div>
-
-    <!-- Scoreboard Overlay -->
-    <div id="scoreboard-modal" class="overlay-modal hidden">
-      <div class="modal-card">
-        <div class="modal-head">
-          <div>
-            <div class="modal-title">СЧЁТ МАТЧА</div>
-            <div id="sb-subtitle" class="modal-sub">Комната ARENA-01 · Supabase Realtime</div>
+          <div class="start-actions">
+            <button id="btnContinueSave" class="pixel-btn btn-green hidden">Продолжить игру</button>
+            <button id="btnEnterWorld" class="pixel-btn btn-gold">Войти в мир</button>
           </div>
-          <button id="btn-close-sb" class="hud-icon-btn" type="button">✕</button>
-        </div>
-        <div class="sb-table-head">
-          <span>ИГРОК</span>
-          <span>ОРУЖИЕ</span>
-          <span>K</span>
-          <span>D</span>
-          <span>K/D</span>
-        </div>
-        <div id="sb-rows" class="sb-rows"></div>
-      </div>
-    </div>
-
-    <!-- Death / Respawn Overlay -->
-    <div id="respawn-modal" class="overlay-modal hidden">
-      <div class="respawn-card">
-        <div class="respawn-tag">ЛИКВИДИРОВАН</div>
-        <div id="respawn-killer" class="respawn-killer">Враг</div>
-        <div class="respawn-timer-row">
-          Возрождение через <span id="respawn-countdown">3</span>с
         </div>
       </div>
     </div>
   </div>
 
-  <script src="js/weapons.js"></script>
-  <script src="js/audio.js"></script>
-  <script src="js/maps.js"></script>
-  <script src="js/engine3d.js"></script>
-  <script src="js/supabase_net.js"></script>
+  <!-- MAIN WORLD CANVAS -->
+  <canvas id="gameCanvas"></canvas>
+
+  <!-- IN-GAME HUD LAYER -->
+  <div id="hudLayer" class="hud-layer hidden">
+    <!-- TOP-LEFT: PLAYER CARD -->
+    <div id="hudPlayerCard" class="hud-player-card pixel-frame" data-hud-drag="playerCard">
+      <div class="hud-portrait-wrap">
+        <canvas id="hudPortraitCanvas" width="48" height="48"></canvas>
+        <div id="hudLevel" class="hud-level-badge">Ур.<span id="hudLevelNum">1</span></div>
+      </div>
+      <div class="hud-player-info">
+        <div class="hud-name-row">
+          <span id="hudName" class="hud-name">Герой</span>
+          <span id="hudClanTag" class="hud-clan-tag hidden"></span>
+          <span id="hudPvpBadge" class="hud-pvp-badge off">МИР</span>
+          <span id="hudOnlineBadge" class="hud-online-badge">Онлайн: 1</span>
+          <span id="hudFps" class="hud-fps">60</span>
+        </div>
+        <div class="bar-track hud-hp-track">
+          <div id="hudHpBar" class="bar-fill hp-fill" style="width:100%;"></div>
+          <span id="hudHpText" class="bar-text">150 / 150</span>
+        </div>
+        <div class="bar-track hud-mp-track">
+          <div id="hudMpBar" class="bar-fill mp-fill" style="width:100%;"></div>
+          <span id="hudMpText" class="bar-text">80 / 80</span>
+        </div>
+        <div class="hud-currency-row">
+          <div class="hud-gold-pill">
+            <img class="px-ico px-ico-xs" data-px-icon="coin" data-px-size="16" alt="" />
+            <span id="hudGold">250</span>
+            <button id="hudShopPlus" class="hud-plus-btn" title="Магазин / Донат">+</button>
+          </div>
+          <div class="hud-power-pill">
+            <img class="px-ico px-ico-xs" data-px-icon="weapons" data-px-size="14" alt="" />
+            <span>БМ: <b id="hudPower">0</b></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LEFT STACK: QUEST TRACKER & PARTY WIDGET -->
+    <div class="hud-left-stack" data-hud-drag="questTracker">
+      <div id="questTracker" class="quest-tracker pixel-frame">
+        <button id="toggleQuestTracker" class="quest-tracker-head">
+          <span>
+            <img class="px-ico px-ico-xs" data-px-icon="diamond_quest" data-px-size="14" alt="" />
+            Задания
+          </span>
+          <span id="questChevron">v</span>
+        </button>
+        <div id="questTrackerBody" class="quest-tracker-body"></div>
+      </div>
+
+      <div id="partyWidget" class="party-widget pixel-frame hidden">
+        <div class="party-widget-head">
+          <span>
+            <img class="px-ico px-ico-xs" data-px-icon="party" data-px-size="14" alt="" />
+            Отряд (Пати)
+          </span>
+          <button id="btnLeaveParty" class="pixel-btn btn-sm btn-crimson">Выйти</button>
+        </div>
+        <div id="partyListBody" class="party-list-body"></div>
+      </div>
+    </div>
+
+    <!-- TOP-CENTER: NAVIGATION BAR -->
+    <div class="top-nav-bar pixel-frame" data-hud-drag="topNav">
+      <button class="nav-ico-btn" data-modal="map" title="Карта мира">
+        <img class="px-ico px-ico-sm" data-px-icon="map" data-px-size="22" alt="" />
+        <span>Карта</span>
+      </button>
+      <button class="nav-ico-btn" data-modal="quests" title="Задания">
+        <img class="px-ico px-ico-sm" data-px-icon="quests" data-px-size="22" alt="" />
+        <span>Квесты</span>
+        <span id="badgeQuests" class="nav-badge hidden">!</span>
+      </button>
+      <button class="nav-ico-btn" data-modal="inventory" title="Сумка">
+        <img class="px-ico px-ico-sm" data-px-icon="inventory" data-px-size="22" alt="" />
+        <span>Сумка</span>
+      </button>
+      <button class="nav-ico-btn" data-modal="bank" title="Банк монет">
+        <img class="px-ico px-ico-sm" data-px-icon="storage" data-px-size="22" alt="" />
+        <span>Банк</span>
+      </button>
+      <button class="nav-ico-btn" data-modal="auction" title="Онлайн Аукцион">
+        <img class="px-ico px-ico-sm" data-px-icon="auction" data-px-size="22" alt="" />
+        <span>Аукцион</span>
+      </button>
+      <button class="nav-ico-btn" data-modal="tradeHub" title="Онлайн игроки, Обмен и Пати">
+        <img class="px-ico px-ico-sm" data-px-icon="trade" data-px-size="22" alt="" />
+        <span>Онлайн</span>
+      </button>
+      <button class="nav-ico-btn" data-modal="donate" title="Донат Telegram Stars">
+        <img class="px-ico px-ico-sm" data-px-icon="tg_star" data-px-size="22" alt="" />
+        <span>Stars</span>
+      </button>
+      <button class="nav-ico-btn" data-modal="menu" title="Главное меню">
+        <img class="px-ico px-ico-sm" data-px-icon="menu" data-px-size="22" alt="" />
+        <span>Меню</span>
+        <span id="badgeMenu" class="nav-badge hidden">!</span>
+      </button>
+    </div>
+
+    <!-- BOSS HP BANNER -->
+    <div id="bossBanner" class="boss-banner pixel-frame hidden">
+      <div class="boss-banner-top">
+        <img class="px-ico px-ico-sm" data-px-icon="skull" data-px-size="20" alt="" />
+        <span id="bossBannerName" class="boss-banner-name">Босс</span>
+        <span id="bossBannerSub" class="boss-banner-sub">Мировой Босс</span>
+      </div>
+      <div class="bar-track" style="height:12px;">
+        <div id="bossBannerFill" class="bar-fill boss-fill" style="width:100%;"></div>
+        <span id="bossBannerText" class="bar-text">0 / 0</span>
+      </div>
+    </div>
+
+    <!-- REAL-TIME INVITE BANNER (PARTY / TRADE) -->
+    <div id="netInviteBanner" class="net-invite-banner pixel-frame hidden">
+      <img class="px-ico px-ico-sm" data-px-icon="online" data-px-size="20" alt="" />
+      <span id="netInviteText" class="net-invite-text">Приглашение</span>
+      <button id="btnNetInviteAccept" class="pixel-btn btn-sm btn-green">Принять</button>
+      <button id="btnNetInviteDecline" class="pixel-btn btn-sm btn-crimson">Отклонить</button>
+    </div>
+
+    <!-- TOP-RIGHT: MINIMAP & QUICK TOGGLES -->
+    <div id="minimapBox" class="minimap-box pixel-frame" data-hud-drag="minimap">
+      <canvas id="minimapCanvas" width="128" height="84"></canvas>
+      <div class="minimap-meta">
+        <span id="hudZoneName">Площадь Аэтельгарда</span>
+        <span id="hudCoords">820, 620</span>
+      </div>
+      <div class="minimap-tools">
+        <button id="btnAdminPanel" class="mini-tool-btn gold hidden" title="Админ-Панель">
+          <img class="px-ico px-ico-xs" data-px-icon="admin_bot" data-px-size="14" alt="" />
+          <span>Админ</span>
+        </button>
+        <button id="btnTogglePvp" class="mini-tool-btn" title="Переключить PvP режим">
+          <img class="px-ico px-ico-xs" data-px-icon="pvp" data-px-size="14" alt="" />
+          <span id="btnTogglePvpText">PvP: ВЫКЛ</span>
+        </button>
+        <button id="btnQuickScale" class="mini-tool-btn" title="Масштаб интерфейса">
+          <img class="px-ico px-ico-xs" data-px-icon="scale" data-px-size="14" alt="" />
+          <span id="btnQuickScaleText">100%</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- BOTTOM-LEFT: CHAT -->
+    <div id="chatBox" class="chat-box pixel-frame" data-hud-drag="chatBox">
+      <div class="chat-header">
+        <div class="chat-tabs">
+          <button class="chat-tab active" data-ch="all">Все</button>
+          <button class="chat-tab" data-ch="world">Мир</button>
+          <button class="chat-tab" data-ch="party">Пати</button>
+          <button class="chat-tab" data-ch="trade">Торг</button>
+          <button class="chat-tab" data-ch="clan">Клан</button>
+        </div>
+        <button id="btnToggleChat" class="chat-toggle-btn" title="Свернуть чат">_</button>
+      </div>
+      <div id="chatMessages" class="chat-messages"></div>
+      <div class="chat-input-row">
+        <input id="chatInput" class="chat-input" type="text" maxlength="100" placeholder="Написать в чат..." />
+        <button id="btnSendChat" class="pixel-btn btn-sm btn-gold">Ок</button>
+      </div>
+    </div>
+
+    <!-- BOTTOM-LEFT: VIRTUAL JOYSTICK -->
+    <div id="joystickZone" class="joystick-zone" data-hud-drag="joystick">
+      <div class="joystick-base">
+        <div id="joystickKnob" class="joystick-knob"></div>
+      </div>
+    </div>
+
+    <!-- BOTTOM-CENTER: POTIONS & SKILL SLOTS -->
+    <div class="hud-skills-cluster" data-hud-drag="skillBar">
+      <div class="quick-pots-col">
+        <button id="btnQuickHpPot" class="pot-btn" title="Зелье здоровья">
+          <img class="px-ico px-ico-sm" data-px-icon="hp_vial" data-px-size="22" alt="" />
+          <span id="hpPotQty" class="pot-qty">0</span>
+        </button>
+        <button id="btnQuickMpPot" class="pot-btn" title="Зелье маны">
+          <img class="px-ico px-ico-sm" data-px-icon="mp_vial" data-px-size="22" alt="" />
+          <span id="mpPotQty" class="pot-qty">0</span>
+        </button>
+      </div>
+      <div id="hudSkillSlots" class="hud-skill-slots"></div>
+    </div>
+
+    <!-- BOTTOM-RIGHT: COMBAT & ACTION PAD -->
+    <div class="action-pad" data-hud-drag="actionPad">
+      <div class="action-sub-row">
+        <button id="btnAutoCombat" class="act-mini-btn" title="Автобой">
+          <img class="px-ico px-ico-sm" data-px-icon="auto_slash" data-px-size="20" alt="" />
+          <span>Авто</span>
+        </button>
+        <button id="btnToggleMount" class="act-mini-btn" title="Призвать маунта">
+          <img class="px-ico px-ico-sm" data-px-icon="mounts" data-px-size="20" alt="" />
+          <span>Маунт</span>
+        </button>
+        <button id="btnDash" class="act-mini-btn" title="Рывок">
+          <img class="px-ico px-ico-sm" data-px-icon="dash_boot" data-px-size="20" alt="" />
+          <span>Рывок</span>
+          <div id="dashCdOverlay" class="cd-overlay hidden"></div>
+        </button>
+      </div>
+      <div class="action-main-row">
+        <button id="btnLootAll" class="act-side-btn" title="Собрать лут">
+          <img class="px-ico px-ico-sm" data-px-icon="loot_gem" data-px-size="22" alt="" />
+          <span>Лут</span>
+        </button>
+        <button id="btnInteract" class="act-side-btn" title="Взаимодействие / Добыча">
+          <img class="px-ico px-ico-sm" data-px-icon="pickaxe" data-px-size="22" alt="" />
+          <span>Сбор</span>
+        </button>
+        <button id="btnAttack" class="act-attack-btn" title="Атака">
+          <img class="px-ico px-ico-lg" data-px-icon="attack_sword" data-px-size="36" alt="" />
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PRIMARY MODAL OVERLAY -->
+  <div id="modalOverlay" class="modal-overlay hidden">
+    <div class="modal-window pixel-frame">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <img id="modalIcon" class="px-ico px-ico-md" alt="" />
+          <h2 id="modalTitle" class="modal-title">Меню</h2>
+        </div>
+        <button id="btnCloseModal" class="pixel-btn btn-sm btn-crimson">X</button>
+      </div>
+      <div id="modalBody" class="modal-body"></div>
+    </div>
+  </div>
+
+  <!-- SECONDARY SUB-MODAL OVERLAY -->
+  <div id="subModalOverlay" class="modal-overlay sub-overlay hidden">
+    <div class="modal-window sub-window pixel-frame">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <img id="subModalIcon" class="px-ico px-ico-sm" alt="" />
+          <h3 id="subModalTitle" class="modal-title">Детали</h3>
+        </div>
+        <button id="btnCloseSubModal" class="pixel-btn btn-sm btn-crimson">X</button>
+      </div>
+      <div id="subModalBody" class="modal-body"></div>
+    </div>
+  </div>
+
+  <!-- DEATH OVERLAY (HARDCORE LOOT DROP + 20% COIN PENALTY) -->
+  <div id="deathOverlay" class="modal-overlay hidden">
+    <div class="death-card pixel-frame">
+      <img class="px-ico px-ico-lg" data-px-icon="skull" data-px-size="44" alt="" />
+      <h2 class="death-title">ВЫ ПАЛИ В БОЮ</h2>
+      <p id="deathReason" class="death-reason">Все вещи остались на земле, потеряно 20% монет (Банк в безопасности).</p>
+      <button id="btnRespawn" class="pixel-btn btn-gold">Возродиться в Аэтельгарде</button>
+    </div>
+  </div>
+
+  <!-- FISHING MINIGAME OVERLAY -->
+  <div id="fishingOverlay" class="modal-overlay hidden">
+    <div class="fishing-card pixel-frame">
+      <div style="display:flex;align-items:center;gap:8px;justify-content:center;">
+        <img class="px-ico px-ico-md" data-px-icon="fish" data-px-size="26" alt="" />
+        <h3 style="color:#ffe08a;margin:0;">Рыбалка</h3>
+      </div>
+      <div style="font-size:11px;color:#9fb2db;text-align:center;">Нажмите «Подсечь», когда маркер попадёт в зелёную зону!</div>
+      <div id="fishingBar" class="fishing-bar">
+        <div id="fishingZone" class="fishing-zone"></div>
+        <div id="fishingCursor" class="fishing-cursor"></div>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:center;">
+        <button id="btnFishCatch" class="pixel-btn btn-green">Подсечь!</button>
+        <button id="btnFishCancel" class="pixel-btn btn-dark">Отмена</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- HUD LAYOUT EDITOR OVERLAY -->
+  <div id="hudEditOverlay" class="hud-edit-banner pixel-frame hidden">
+    <span>Перетаскивайте блоки интерфейса пальцем или мышкой</span>
+    <button id="btnSaveHudEdit" class="pixel-btn btn-sm btn-green">Готово</button>
+    <button id="btnResetHudEdit" class="pixel-btn btn-sm btn-dark">Сброс</button>
+  </div>
+
+  <!-- TOAST STACK & DRAG GHOST -->
+  <div id="toastStack" class="toast-stack"></div>
+  <div id="dragGhost" class="drag-ghost hidden"></div>
+
+  <!-- BLADEREALM SCRIPTS IN EXACT DEPENDENCY ORDER -->
+  <script src="js/data/weapons.js"></script>
+  <script src="js/data/monsters.js"></script>
+  <script src="js/data/mounts.js"></script>
+  <script src="js/data/skills.js"></script>
+  <script src="js/engine/icons.js"></script>
+  <script src="js/engine/sprites.js"></script>
+  <script src="js/world/world.js"></script>
+  <script src="js/engine/combat.js"></script>
+  <script src="js/engine/bots.js"></script>
+  <script src="js/systems/mmo.js"></script>
+  <script src="js/systems/telegram.js"></script>
+  <script src="js/systems/multiplayer.js"></script>
+  <script src="js/ui/modals.js"></script>
   <script src="js/main.js"></script>
 </body>
 </html>

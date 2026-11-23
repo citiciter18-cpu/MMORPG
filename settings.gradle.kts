@@ -22,6 +22,6 @@ dependencyResolutionManagement {
   }
 }
 
-rootProject.name = "Vortex Arena"
+rootProject.name = "BladeRealm"
 
 include(":app")
