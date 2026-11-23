@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>Vortex Arena — 3D Multiplayer FPS (Supabase)</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div id="game-root">
+    <canvas id="gl-canvas"></canvas>
+    <canvas id="overlay-canvas"></canvas>
+
+    <!-- Damage directional flash & low-HP vignette -->
+    <div id="damage-vignette"></div>
+    <div id="hit-direction-ring"></div>
+
+    <!-- Railgun ADS Scope Overlay -->
+    <div id="scope-overlay" class="hidden">
+      <div class="scope-circle">
+        <div class="scope-line-h"></div>
+        <div class="scope-line-v"></div>
+        <div class="scope-dot"></div>
+        <div class="scope-label">LR-7 OPTICS · 3.5X</div>
+      </div>
+    </div>
+
+    <!-- Top HUD Bar -->
+    <header id="hud-top">
+      <div class="hud-left-cluster">
+        <canvas id="minimap-canvas" width="116" height="116"></canvas>
+        <div class="match-pill">
+          <div class="pill-row">
+            <span id="net-dot" class="status-dot offline"></span>
+            <span id="hud-mode-label">ПОЛИГОН</span>
+          </div>
+          <div class="pill-sub">
+            <span id="hud-room-code">ARENA-01</span>
+            <span>·</span>
+            <span id="hud-players-count">1 ИГРОК</span>
+            <span id="hud-ping"></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="hud-center-score">
+        <div class="stat-chip">
+          <span class="stat-k">K</span>
+          <span id="hud-kills">0</span>
+        </div>
+        <div class="stat-divider">/</div>
+        <div class="stat-chip">
+          <span class="stat-k">D</span>
+          <span id="hud-deaths">0</span>
+        </div>
+        <div id="hud-streak-badge" class="streak-badge hidden">x2</div>
+      </div>
+
+      <div class="hud-right-cluster">
+        <button id="btn-scoreboard" class="hud-icon-btn" type="button" aria-label="Таблица счета">
+          TAB
+        </button>
+        <button id="btn-lobby" class="hud-icon-btn danger" type="button" aria-label="Выход в лобби">
+          ЛОББИ
+        </button>
+      </div>
+    </header>
+
+    <!-- Kill Feed -->
+    <div id="kill-feed"></div>
+
+    <!-- Center Dynamic Crosshair -->
+    <div id="crosshair">
+      <span class="ch-tick top"></span>
+      <span class="ch-tick right"></span>
+      <span class="ch-tick bottom"></span>
+      <span class="ch-tick left"></span>
+      <span class="ch-dot"></span>
+      <div id="hitmarker" class="hidden">
+        <span class="hm-a"></span>
+        <span class="hm-b"></span>
+      </div>
+    </div>
+
+    <!-- Center Notification Toast (Jump Pad / Reload / Elimination) -->
+    <div id="center-banner" class="hidden"></div>
+
+    <!-- Bottom Status HUD -->
+    <div id="hud-bottom">
+      <div class="vital-card">
+        <div class="vital-header">
+          <span class="vital-tag">HP</span>
+          <span id="hud-hp-num" class="vital-num">100</span>
+        </div>
+        <div class="vital-bar-track">
+          <div id="hud-hp-bar" class="vital-bar-fill hp"></div>
+        </div>
+        <div class="vital-bar-track shield-track">
+          <div id="hud-shield-bar" class="vital-bar-fill shield"></div>
+        </div>
+      </div>
+
+      <div id="weapon-bar">
+        <button class="weapon-slot active" data-weapon="rifle" type="button">
+          <span class="slot-idx">1</span>
+          <span class="slot-name">VX-9</span>
+        </button>
+        <button class="weapon-slot" data-weapon="shotgun" type="button">
+          <span class="slot-idx">2</span>
+          <span class="slot-name">SG-4</span>
+        </button>
+        <button class="weapon-slot" data-weapon="railgun" type="button">
+          <span class="slot-idx">3</span>
+          <span class="slot-name">LR-7</span>
+        </button>
+      </div>
+
+      <div class="ammo-card">
+        <div id="hud-weapon-name" class="weapon-title">VX-9 ИМПУЛЬС</div>
+        <div class="ammo-row">
+          <span id="hud-ammo-mag" class="ammo-mag">30</span>
+          <span class="ammo-sep">/</span>
+          <span id="hud-ammo-res" class="ammo-res">120</span>
+        </div>
+        <div id="reload-progress-track" class="hidden">
+          <div id="reload-progress-bar"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Touch Controls Layer (works on mobile & emulator touch) -->
+    <div id="touch-layer">
+      <div id="move-zone">
+        <div id="joy-base" class="hidden">
+          <div id="joy-knob"></div>
+        </div>
+        <div class="zone-hint" id="move-hint">ДВИЖЕНИЕ</div>
+      </div>
+      <div id="look-zone">
+        <div class="zone-hint" id="look-hint">ОБЗОР</div>
+      </div>
+
+      <div id="action-cluster">
+        <button id="btn-ads" class="tact-btn small" type="button">ПРИЦЕЛ</button>
+        <button id="btn-reload" class="tact-btn small" type="button">R</button>
+        <button id="btn-jump" class="tact-btn medium" type="button">ПРЫЖОК</button>
+        <button id="btn-fire" class="tact-btn fire" type="button">ОГОНЬ</button>
+      </div>
+    </div>
+
+    <!-- Scoreboard Overlay -->
+    <div id="scoreboard-modal" class="overlay-modal hidden">
+      <div class="modal-card">
+        <div class="modal-head">
+          <div>
+            <div class="modal-title">СЧЁТ МАТЧА</div>
+            <div id="sb-subtitle" class="modal-sub">Комната ARENA-01 · Supabase Realtime</div>
+          </div>
+          <button id="btn-close-sb" class="hud-icon-btn" type="button">✕</button>
+        </div>
+        <div class="sb-table-head">
+          <span>ИГРОК</span>
+          <span>ОРУЖИЕ</span>
+          <span>K</span>
+          <span>D</span>
+          <span>K/D</span>
+        </div>
+        <div id="sb-rows" class="sb-rows"></div>
+      </div>
+    </div>
+
+    <!-- Death / Respawn Overlay -->
+    <div id="respawn-modal" class="overlay-modal hidden">
+      <div class="respawn-card">
+        <div class="respawn-tag">ЛИКВИДИРОВАН</div>
+        <div id="respawn-killer" class="respawn-killer">Враг</div>
+        <div class="respawn-timer-row">
+          Возрождение через <span id="respawn-countdown">3</span>с
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/weapons.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/maps.js"></script>
+  <script src="js/engine3d.js"></script>
+  <script src="js/supabase_net.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>

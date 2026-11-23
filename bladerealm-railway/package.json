@@ -1,0 +1,16 @@
+{
+  "name": "bladerealm-railway",
+  "version": "1.0.0",
+  "description": "BladeRealm Telegram Mini App Server (Static Game + Telegram Stars + Promo API + WebSocket Multiplayer)",
+  "main": "server.js",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "ws": "^8.18.0"
+  }
+}
