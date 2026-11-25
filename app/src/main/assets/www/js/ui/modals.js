@@ -110,7 +110,14 @@ window.UI = (function () {
       quests:       ['quests',       'Задания и Ежедневки', renderQuestsModal],
       achievements: ['achievements', 'Достижения', renderAchievementsModal],
       leaderboard:  ['leaderboard',  'Таблица рейтингов', renderLeaderboardModal],
-      settings:     ['settings',     'Настройки, Масштаб и Кнопки', renderSettingsModal]
+      cosmetics:    ['cosmetics',    'Гардероб и Косметика', r => window.ExtraModals.renderCosmeticsModal(r)],
+      dungeons:     ['dungeon',      'Рейдовые Подземелья', r => window.ExtraModals.renderDungeonsModal(r)],
+      clanWars:     ['fortress',     'Войны Кланов и Крепости', r => window.ExtraModals.renderClanWarsModal(r)],
+      arena:        ['arena',        'PvP-Арена (1x1 и 2x2)', r => window.ExtraModals.renderArenaModal(r)],
+      pets:         ['pet',          'Боевые Питомцы', r => window.ExtraModals.renderPetsModal(r)],
+      battlePass:   ['battlepass',   '7 Дней и Боевой Пропуск', r => window.ExtraModals.renderBattlePassModal(r)],
+      bounty:       ['bounty',       'Охота за Головами и Карма PK', r => window.ExtraModals.renderBountyModal(r)],
+      settings:     ['settings',     'Настройки, Звук и Облако', renderSettingsModal]
     };
     const cfg = map[currentModal];
     if (!cfg) return;
@@ -124,8 +131,16 @@ window.UI = (function () {
   // 1. MAIN MENU (Ornate Pixel-Art Grid matching Reference Image 2)
   // =========================================================================
   function renderMainMenu(root) {
+    const bpBadge = window.Progression && window.Progression.hasPendingRewards && window.Progression.hasPendingRewards();
     const items = [
       ['character',    'character',    'Персонаж'],
+      ['cosmetics',    'cosmetics',    'Косметика'],
+      ['pets',         'pet',          'Питомцы'],
+      ['battlePass',   'battlepass',   bpBadge ? 'Пропуск (!)' : 'Пропуск / 7д'],
+      ['dungeons',     'dungeon',      'Рейд-Данжи'],
+      ['arena',        'arena',        'PvP Арена'],
+      ['clanWars',     'fortress',     'Крепости'],
+      ['bounty',       'bounty',       'Розыск PK'],
       ['inventory',    'inventory',    'Инвентарь'],
       ['skills',       'skills',       'Навыки'],
       ['map',          'map',          'Карта (10)'],
@@ -149,9 +164,10 @@ window.UI = (function () {
     if (window.GameState.adminBot && window.GameState.adminBot.owned) {
       items.unshift(['adminPanel', 'admin_bot', 'Админ-Панель']);
     }
-    root.innerHTML = `<div class="main-menu-grid">${items.map(it =>
-      `<button class="menu-card" ${it[0]==='adminPanel'?'style="border-color:#fbbf24;background:rgba(52,32,82,0.88);"':''} data-open="${it[0]}">${px(it[1], 'menu-card-px', 32)}<span>${it[2]}</span></button>`
-    ).join('')}</div>`;
+    root.innerHTML = `<div class="main-menu-grid">${items.map(it => {
+      const hi = it[0] === 'adminPanel' || (it[0] === 'battlePass' && bpBadge);
+      return `<button class="menu-card" ${hi ? 'style="border-color:#fbbf24;background:rgba(52,32,82,0.88);"' : ''} data-open="${it[0]}">${px(it[1], 'menu-card-px', 32)}<span>${it[2]}</span></button>`;
+    }).join('')}</div>`;
     root.querySelectorAll('[data-open]').forEach(btn => {
       btn.onclick = () => {
         if (btn.dataset.open === '__exit') {
@@ -174,9 +190,12 @@ window.UI = (function () {
     const needXp = window.MMO.xpForLevel(p.level);
     const xpPct = Math.min(100, Math.round((p.xp / needXp) * 100));
     const attr = p.attributes || { str: 5, vit: 5, int: 5, agi: 5, lck: 5 };
-    const hairs = ['#1a1b2e', '#cbd5e1', '#b91c1c', '#f59e0b', '#38bdf8', '#a855f7'];
-    const cloaks = ['#b91c1c', '#1d4ed8', '#15803d', '#7c3aed', '#ca8a04', '#0f172a'];
+    const CD = window.CosmeticsData;
+    const skins = CD ? CD.SKIN_COLORS.map(c => c.hex) : ['#f7d5b0', '#e0ac69', '#c68642', '#8d5524', '#cfe5f7'];
+    const hairs = CD ? CD.HAIR_COLORS.slice(0, 8).map(c => c.hex) : ['#151829', '#f8fafc', '#b91c1c', '#f59e0b', '#38bdf8', '#a855f7'];
+    const cloaks = CD ? CD.CLOAK_COLORS.slice(0, 8).map(c => c.hex) : ['#c81d32', '#1d4ed8', '#15803d', '#7c3aed', '#ca8a04', '#0f172a'];
     const armors = ['#24293d', '#3b1d2a', '#1e3a5f', '#1f3a2e', '#3b1f54', '#4a3728'];
+    const styles = CD ? CD.HAIR_STYLES : [{ id: 'spiky', name: 'Острые' }, { id: 'long', name: 'Длинные' }];
 
     const attrDefs = [
       ['str', 'weapons',   'Сила (STR)',      '+3 АТК, +0.3% пробития'],
@@ -255,8 +274,14 @@ window.UI = (function () {
               <button class="pixel-btn btn-gold" id="btnApplyRename">Сменить имя</button>
             </div>
             <div style="display:flex;gap:10px;flex-wrap:wrap;">
-              <div><div style="font-size:10px;color:#9fb2db;margin-bottom:3px;">Волосы</div>
+              <div><div style="font-size:10px;color:#9fb2db;margin-bottom:3px;">Кожа</div>
+                <div class="swatch-row">${skins.map(c => `<div class="swatch ${p.appearance.skin===c?'active':''}" data-skin="${c}" style="background:${c}"></div>`).join('')}</div>
+              </div>
+              <div><div style="font-size:10px;color:#9fb2db;margin-bottom:3px;">Волосы / Голова</div>
                 <div class="swatch-row">${hairs.map(c => `<div class="swatch ${p.appearance.hair===c?'active':''}" data-hair="${c}" style="background:${c}"></div>`).join('')}</div>
+              </div>
+              <div><div style="font-size:10px;color:#9fb2db;margin-bottom:3px;">Причёска</div>
+                <div style="display:flex;gap:4px;flex-wrap:wrap;">${styles.map(s => `<button class="pixel-btn btn-sm ${(p.appearance.hairStyle||'spiky')===s.id?'btn-gold':'btn-dark'}" data-hstyle="${s.id}">${s.name}</button>`).join('')}</div>
               </div>
               <div><div style="font-size:10px;color:#9fb2db;margin-bottom:3px;">Плащ</div>
                 <div class="swatch-row">${cloaks.map(c => `<div class="swatch ${p.appearance.cloak===c?'active':''}" data-cloak="${c}" style="background:${c}"></div>`).join('')}</div>
@@ -268,9 +293,10 @@ window.UI = (function () {
           </div>
 
           <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            <button class="pixel-btn btn-gold" id="btnCharToCosmetics">${px('cosmetics')} Косметика</button>
             <button class="pixel-btn btn-blue" id="btnCharToInv">${px('inventory')} Экипировка</button>
             <button class="pixel-btn btn-purple" id="btnCharToSkills">${px('skills')} Навыки</button>
-            <button class="pixel-btn btn-gold" id="btnCharToWeapons">${px('weapons')} 23 Оружия</button>
+            <button class="pixel-btn btn-green" id="btnCharToPets">${px('pet')} Питомцы</button>
           </div>
         </div>
       </div>`;
@@ -285,12 +311,15 @@ window.UI = (function () {
       const nv = root.querySelector('#charRenameInput').value.trim();
       if (nv) { p.name = nv; toast('Имя изменено на ' + nv); renderCurrentModal(); }
     };
-    root.querySelectorAll('[data-hair]').forEach(el => el.onclick = () => { p.appearance.hair = el.dataset.hair; renderCurrentModal(); });
-    root.querySelectorAll('[data-cloak]').forEach(el => el.onclick = () => { p.appearance.cloak = el.dataset.cloak; renderCurrentModal(); });
-    root.querySelectorAll('[data-armor]').forEach(el => el.onclick = () => { p.appearance.armor = el.dataset.armor; renderCurrentModal(); });
+    root.querySelectorAll('[data-skin]').forEach(el => el.onclick = () => { p.appearance.skin = el.dataset.skin; window.MMO.saveProgress(); renderCurrentModal(); });
+    root.querySelectorAll('[data-hair]').forEach(el => el.onclick = () => { p.appearance.hair = el.dataset.hair; window.MMO.saveProgress(); renderCurrentModal(); });
+    root.querySelectorAll('[data-hstyle]').forEach(el => el.onclick = () => { p.appearance.hairStyle = el.dataset.hstyle; window.MMO.saveProgress(); renderCurrentModal(); });
+    root.querySelectorAll('[data-cloak]').forEach(el => el.onclick = () => { p.appearance.cloak = el.dataset.cloak; window.MMO.saveProgress(); renderCurrentModal(); });
+    root.querySelectorAll('[data-armor]').forEach(el => el.onclick = () => { p.appearance.armor = el.dataset.armor; window.MMO.saveProgress(); renderCurrentModal(); });
+    root.querySelector('#btnCharToCosmetics').onclick = () => openModal('cosmetics');
     root.querySelector('#btnCharToInv').onclick = () => openModal('inventory');
     root.querySelector('#btnCharToSkills').onclick = () => openModal('skills');
-    root.querySelector('#btnCharToWeapons').onclick = () => openModal('weapons');
+    root.querySelector('#btnCharToPets').onclick = () => openModal('pets');
   }
 
   function drawCharacterPreviewCanvas(canvas, entity) {
@@ -2312,15 +2341,32 @@ window.UI = (function () {
     const mpColor = mp.status === 'connected' ? '#4ade80' : (mp.status === 'connecting' ? '#fbbf24' : '#f87171');
     const mpLabel = mp.status === 'connected' ? 'ПОДКЛЮЧЕНО (Онлайн: ' + mp.onlineCount + ')' : (mp.status === 'connecting' ? 'ПОДКЛЮЧЕНИЕ...' : 'ОФЛАЙН');
 
+    const auMuted = window.GameAudio ? window.GameAudio.isMuted() : false;
+    const auMusic = window.GameAudio ? Math.round(window.GameAudio.getMusicVol() * 100) : 32;
+    const auSfx = window.GameAudio ? Math.round(window.GameAudio.getSfxVol() * 100) : 55;
+
     root.innerHTML = `
       <div class="tab-strip">
         <button class="tab-btn ${settingsTab === 'general' ? 'active' : ''}" data-stab="general">${px('settings')} Основные</button>
+        <button class="tab-btn ${settingsTab === 'cloud' ? 'active' : ''}" data-stab="cloud">${px('cloud')} Облако</button>
         <button class="tab-btn ${settingsTab === 'multiplayer' ? 'active' : ''}" data-stab="multiplayer">${px('online')} Мультиплеер</button>
         <button class="tab-btn ${settingsTab === 'promo' ? 'active' : ''}" data-stab="promo">${px('promo')} Промокод</button>
       </div>
 
       ${settingsTab === 'general' ? `
         <div style="display:flex;flex-direction:column;gap:10px;max-width:520px;margin:auto;">
+          <div class="pixel-inset" style="padding:10px;display:flex;flex-direction:column;gap:7px;border-color:#38bdf8;">
+            <div style="font-weight:900;color:#7cc0ff;">${px(auMuted ? 'audio_off' : 'audio_on')} 8-bit Музыка и Звуковые эффекты</div>
+            <label style="display:flex;justify-content:space-between;align-items:center;"><span>Отключить весь звук</span><input type="checkbox" id="chkAudioMute" ${auMuted?'checked':''} /></label>
+            <div>
+              <div style="font-size:10.5px;color:#dbe7ff;display:flex;justify-content:space-between;"><span>Громкость музыки</span><span id="setMusicVal">${auMusic}%</span></div>
+              <input id="setMusicSlider" type="range" min="0" max="100" step="5" value="${auMusic}" style="width:100%;" />
+            </div>
+            <div>
+              <div style="font-size:10.5px;color:#dbe7ff;display:flex;justify-content:space-between;"><span>Громкость эффектов (SFX)</span><span id="setSfxVal">${auSfx}%</span></div>
+              <input id="setSfxSlider" type="range" min="0" max="100" step="5" value="${auSfx}" style="width:100%;" />
+            </div>
+          </div>
           <div class="pixel-inset" style="padding:10px;display:flex;flex-direction:column;gap:8px;border-color:#d9a742;">
             <div style="font-weight:900;color:#ffe08a;">${px('settings')} Расположение кнопок на экране (Редактор HUD)</div>
             <div style="font-size:11px;color:#b7c7eb;">Перетащите джойстик, кнопку атаки, навыки, карту, чат и любые панели в удобное место экрана.</div>
@@ -2349,7 +2395,7 @@ window.UI = (function () {
             <button class="pixel-btn btn-crimson" id="btnResetProgress">${px('trash')} Сбросить сохранение</button>
           </div>
         </div>
-      ` : settingsTab === 'multiplayer' ? `
+      ` : settingsTab === 'cloud' ? window.ExtraModals.renderCloudTabHtml() : settingsTab === 'multiplayer' ? `
         <div style="display:flex;flex-direction:column;gap:10px;max-width:540px;margin:auto;">
           <div class="pixel-inset" style="padding:10px;display:flex;flex-direction:column;gap:8px;border-color:#22d3ee;">
             <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;">
@@ -2424,6 +2470,27 @@ window.UI = (function () {
     });
 
     if (settingsTab === 'general') {
+      const mChk = root.querySelector('#chkAudioMute');
+      if (mChk && window.GameAudio) {
+        mChk.onchange = e => { window.GameAudio.setMuted(e.target.checked); window.MMO.saveProgress(); };
+      }
+      const mSl = root.querySelector('#setMusicSlider');
+      if (mSl && window.GameAudio) {
+        mSl.oninput = e => {
+          const v = Number(e.target.value);
+          root.querySelector('#setMusicVal').textContent = v + '%';
+          window.GameAudio.setMusicVol(v / 100);
+        };
+      }
+      const sSl = root.querySelector('#setSfxSlider');
+      if (sSl && window.GameAudio) {
+        sSl.oninput = e => {
+          const v = Number(e.target.value);
+          root.querySelector('#setSfxVal').textContent = v + '%';
+          window.GameAudio.setSfxVol(v / 100);
+          window.GameAudio.playSfx('coin');
+        };
+      }
       root.querySelector('#btnOpenHudEditor').onclick = () => {
         if (window.GameAPI && window.GameAPI.enterHudEditMode) window.GameAPI.enterHudEditMode();
       };
@@ -2448,6 +2515,8 @@ window.UI = (function () {
         toast('Сохранение удалено. Перезагрузка...');
         setTimeout(() => location.reload(), 600);
       };
+    } else if (settingsTab === 'cloud') {
+      window.ExtraModals.bindCloudTab(root);
     } else if (settingsTab === 'multiplayer') {
       const sbBtn = root.querySelector('#btnSbConnect');
       if (sbBtn && window.Multiplayer) {

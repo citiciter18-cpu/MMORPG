@@ -139,6 +139,7 @@ window.Combat = (function () {
 
     const style = w.style || 'slash';
     const isRanged = style === 'arrow' || style === 'bolt' || style === 'orb' || style === 'beam' || style === 'arcane_wave';
+    if (attacker.isPlayer && window.GameAudio) window.GameAudio.playSfx('hit');
 
     if (isRanged) {
       projectiles.push({
@@ -210,6 +211,7 @@ window.Combat = (function () {
     caster.state = 'skill';
     caster.skillTimer = 0.38;
     caster.skillColor = sk.color;
+    if (caster.isPlayer && window.GameAudio) window.GameAudio.playSfx('skill');
 
     const wType = caster.equipment && caster.equipment.weapon && caster.equipment.weapon.weaponType;
     const masteryLv = (caster.isPlayer && wType && window.GameState.mastery && window.GameState.mastery.weapons[wType]?.lv) || 1;
@@ -419,6 +421,13 @@ window.Combat = (function () {
         }
       });
     }
+    // Include Ranked Arena enemies and World Bounty Outlaws
+    if (attacker.isPlayer && window.Activities && window.Activities.getInstanceHostiles) {
+      window.Activities.getInstanceHostiles().forEach(h => { if (h && h.hp > 0) list.push(h); });
+    }
+    if (attacker.isPlayer && window.Progression && window.Progression.OUTLAWS) {
+      window.Progression.OUTLAWS.forEach(o => { if (!o.dead && o.hp > 0) list.push(o); });
+    }
     return list;
   }
 
@@ -477,6 +486,7 @@ window.Combat = (function () {
 
     if (attacker.isPlayer && isCrit) {
       triggerShake(3.5);
+      if (window.GameAudio) window.GameAudio.playSfx('crit');
       if (window.GameAPI) window.GameAPI.vibrate(14);
     }
 
@@ -511,6 +521,10 @@ window.Combat = (function () {
     if (target.hp <= 0) {
       if (target.zone) {
         handleMonsterDeath(target, attacker);
+      } else if (target.isOutlaw && window.Progression) {
+        window.Progression.handleOutlawDefeated(target);
+      } else if (target.isArenaFighter) {
+        addParticles(target.x, target.y, '#ef4444', 18, 120);
       } else if (target.isBot) {
         handleBotDefeated(target, attacker);
       } else if (target.isPlayer) {
@@ -676,10 +690,20 @@ window.Combat = (function () {
     }
     const ov = document.getElementById('deathOverlay');
     if (ov) ov.classList.remove('hidden');
+    if (window.GameAudio) window.GameAudio.playSfx('death');
   }
 
   function handlePlayerDefeated(killer) {
     const p = window.GameState.player;
+    // Safe death inside Raid Dungeons & Ranked Arena (0% item/gold loss!)
+    if (window.Activities && window.Activities.isInDungeon && window.Activities.isInDungeon()) {
+      window.Activities.exitDungeon(false);
+      return;
+    }
+    if (window.Activities && window.Activities.isInArena && window.Activities.isInArena()) {
+      window.Activities.finishArenaMatch(false);
+      return;
+    }
     if (window.GameState.activeDuelBotId) {
       const bot = window.Bots.byId(window.GameState.activeDuelBotId);
       if (bot) {
@@ -713,6 +737,7 @@ window.Combat = (function () {
     if (loot.kind === 'gold') {
       window.GameState.player.gold += loot.amount;
       addText(loot.x, loot.y - 10, '+' + loot.amount + ' зол.', '#fbbf24', false);
+      if (window.GameAudio) window.GameAudio.playSfx('coin');
       return true;
     }
     if (loot.item) {
@@ -720,6 +745,7 @@ window.Combat = (function () {
       if (ok) {
         const rc = window.GameData.RARITIES[loot.item.rarity]?.color || '#fff';
         addText(loot.x, loot.y - 12, '+' + loot.item.name, rc, loot.item.rarity === 'epic' || loot.item.rarity === 'legendary');
+        if (window.GameAudio) window.GameAudio.playSfx('loot');
         return true;
       } else {
         window.UI.toast('Инвентарь переполнен! Сложите вещи на Склад или продайте.');

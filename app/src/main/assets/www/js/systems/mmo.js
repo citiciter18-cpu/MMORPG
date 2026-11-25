@@ -332,6 +332,7 @@ window.MMO = (function () {
     }
     item.qty -= 1;
     if (item.qty <= 0) bag.splice(idx, 1);
+    if (window.GameAudio) window.GameAudio.playSfx('heal');
     return true;
   }
 
@@ -362,6 +363,7 @@ window.MMO = (function () {
       window.GameState.stats.maxEnhance = Math.max(window.GameState.stats.maxEnhance || 0, nextLv);
       window.GameState.recalcStats();
       window.UI.toast('Успех! ' + item.name + ' улучшен до +' + nextLv + '!');
+      if (window.GameAudio) window.GameAudio.playSfx('upgrade');
       if (window.GameAPI) window.GameAPI.vibrate(25);
     } else {
       window.UI.toast('Заточка не удалась (предмет сохранён). Попробуйте снова!');
@@ -400,6 +402,7 @@ window.MMO = (function () {
       window.Combat.addParticles(p.x, p.y, '#fde047', 26, 160);
       window.UI.toast('Уровень ' + p.level + '! +3 очка характеристик и +2 очка навыков!');
       addChat('system', 'Система', p.name + ' достиг ' + p.level + ' уровня!');
+      if (window.GameAudio) window.GameAudio.playSfx('levelup');
       if (window.GameAPI) window.GameAPI.vibrate(35);
     }
   }
@@ -408,6 +411,13 @@ window.MMO = (function () {
   function onMonsterKilled(m) {
     window.GameState.stats.kills = (window.GameState.stats.kills || 0) + 1;
     if (m.isBoss) window.GameState.stats.bossKills = (window.GameState.stats.bossKills || 0) + 1;
+    if (window.Progression) {
+      window.Progression.onBpEvent('kill', 1);
+      if (m.isBoss) window.Progression.onBpEvent('boss', 1);
+    }
+    if (window.Activities && window.Activities.grantPetXp) {
+      window.Activities.grantPetXp(m.isBoss ? 40 : 12);
+    }
     QUEST_DEFS.forEach(q => {
       if (q.type === 'kill' && (q.target === m.typeId || q.target === 'any')) {
         const st = window.GameState.quests[q.id];
@@ -420,6 +430,7 @@ window.MMO = (function () {
   }
 
   function onProgressEvent(type, amount) {
+    if (window.Progression) window.Progression.onBpEvent(type, amount || 1);
     QUEST_DEFS.forEach(q => {
       if (q.type === type) {
         const st = window.GameState.quests[q.id];
@@ -1305,27 +1316,36 @@ window.MMO = (function () {
   // =========================================================================
   const SAVE_KEY = 'bladerealm_mmorpg_save_v1';
 
+  function buildSaveObject() {
+    return {
+      v: 2,
+      player: window.GameState.player,
+      inventory: window.GameState.inventory,
+      storage: window.GameState.storage,
+      unlockedMounts: window.GameState.unlockedMounts,
+      quests: window.GameState.quests,
+      claimedAchievements: window.GameState.claimedAchievements,
+      stats: window.GameState.stats,
+      professions: window.GameState.professions,
+      mastery: window.GameState.mastery,
+      clan: window.GameState.clan,
+      bankBalance: window.GameState.bankBalance || 0,
+      donateHistory: window.GameState.donateHistory || [],
+      adminBot: window.GameState.adminBot || { owned: false, summoned: false, mode: 'combat', name: 'Админ-Страж' },
+      redeemedPromos: window.GameState.redeemedPromos || [],
+      cosmetics: window.GameState.cosmetics || { owned: ['head_ninja', 'aura_arcane', 'title_novice'], equipped: { head: null, back: null, aura: 'aura_arcane', trail: null, title: 'title_novice' }, hideHelmet: false },
+      pets: window.GameState.pets || { owned: {}, activeId: null },
+      daily: window.GameState.daily || { streak: 0, lastDate: '' },
+      battlePass: window.GameState.battlePass || { xp: 0, premium: false, claimedFree: {}, claimedPrem: {}, quests: {} },
+      arenaTokens: window.GameState.arenaTokens || 0,
+      settings: window.GameState.settings
+    };
+  }
+
   function saveProgress() {
     if (!window.GameState || !window.GameState.started) return;
     try {
-      const payload = JSON.stringify({
-        v: 1,
-        player: window.GameState.player,
-        inventory: window.GameState.inventory,
-        storage: window.GameState.storage,
-        unlockedMounts: window.GameState.unlockedMounts,
-        quests: window.GameState.quests,
-        claimedAchievements: window.GameState.claimedAchievements,
-        stats: window.GameState.stats,
-        professions: window.GameState.professions,
-        mastery: window.GameState.mastery,
-        clan: window.GameState.clan,
-        bankBalance: window.GameState.bankBalance || 0,
-        donateHistory: window.GameState.donateHistory || [],
-        adminBot: window.GameState.adminBot || { owned: false, summoned: false, mode: 'combat', name: 'Админ-Страж' },
-        redeemedPromos: window.GameState.redeemedPromos || [],
-        settings: window.GameState.settings
-      });
+      const payload = JSON.stringify(buildSaveObject());
       if (window.AndroidBridge && window.AndroidBridge.saveGame) {
         window.AndroidBridge.saveGame(payload);
       }
@@ -1420,6 +1440,7 @@ window.MMO = (function () {
     PROMO_CODES,
     redeemPromoCode,
     craftRecipe,
+    buildSaveObject,
     saveProgress,
     loadRawSave,
     clearSavedProgress

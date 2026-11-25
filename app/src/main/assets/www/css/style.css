@@ -1573,10 +1573,174 @@ canvas {
   transform-origin: bottom right;
 }
 
+/* --- START SCREEN APPEARANCE CUSTOMIZER --- */
+.start-custom-grid {
+  padding: 7px 9px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-top: 2px;
+}
+.start-custom-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.start-custom-lbl {
+  width: 60px;
+  font-size: 10px;
+  font-weight: 800;
+  color: #b7c7eb;
+  flex-shrink: 0;
+}
+.start-swatch-row {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.start-swatch {
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  border: 1.5px solid #44588c;
+  cursor: pointer;
+  transition: transform 0.08s ease;
+}
+.start-swatch.active {
+  border: 2px solid #fde047;
+  transform: scale(1.16);
+  box-shadow: 0 0 6px rgba(253, 224, 71, 0.65);
+}
+.start-style-row {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.start-style-btn {
+  padding: 2px 7px;
+  font-size: 9.5px;
+  font-weight: 800;
+  border-radius: 5px;
+  background: #14203d;
+  border: 1px solid #3f558a;
+  color: #dbe7ff;
+  cursor: pointer;
+}
+.start-style-btn.active {
+  background: linear-gradient(180deg, #d99726, #9b610f);
+  border-color: #fde68a;
+  color: #fffbeb;
+}
+
+/* --- HUD PK BADGE & INSTANCE BANNER --- */
+.hud-pk-badge {
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-size: 9px;
+  font-weight: 900;
+  background: #991b1b;
+  border: 1px solid #f87171;
+  color: #fef2f2;
+}
+.instance-banner {
+  position: absolute;
+  top: 66px;
+  left: 50%;
+  transform: translateX(-50%) scale(var(--ui-scale));
+  transform-origin: top center;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 12px;
+  border-color: #c084fc;
+  background: rgba(24, 14, 46, 0.94);
+  z-index: 25;
+}
+.instance-banner-title {
+  font-size: 12px;
+  font-weight: 900;
+  color: #ffe08a;
+}
+.instance-banner-sub {
+  font-size: 10px;
+  color: #d8b4fe;
+}
+
+/* --- COSMETICS, DAILY REWARDS & BATTLE PASS --- */
+.cos-color-dot {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  border: 2px solid #ffe08a;
+  flex-shrink: 0;
+}
+.daily-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
+  gap: 7px;
+}
+.daily-card {
+  padding: 8px 6px;
+  border-radius: 8px;
+  background: #0d152c;
+  border: 1.5px solid #2e4070;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  text-align: center;
+}
+.daily-card.claimed {
+  border-color: #22c55e;
+  background: rgba(20, 68, 42, 0.35);
+}
+.daily-card.next-day {
+  border-color: #fde047;
+  box-shadow: 0 0 10px rgba(253, 224, 71, 0.38);
+  background: rgba(230, 178, 68, 0.16);
+}
+.bp-tier-row {
+  display: grid;
+  grid-template-columns: 52px 1fr 1fr;
+  gap: 7px;
+  align-items: center;
+  padding: 7px;
+  background: rgba(13, 20, 40, 0.92);
+  border: 1.5px solid #2d3e6d;
+  border-radius: 8px;
+}
+.bp-tier-row.unlocked {
+  border-color: #a855f7;
+}
+.bp-lv-badge {
+  text-align: center;
+  font-weight: 900;
+  font-size: 12px;
+  color: #ffe08a;
+  padding: 8px 4px;
+  background: #1a264a;
+  border: 1.5px solid #e6b244;
+  border-radius: 7px;
+}
+.bp-track-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 5px 7px;
+  background: rgba(9, 14, 30, 0.85);
+  border: 1px solid #283760;
+  border-radius: 6px;
+}
+.bp-track-cell.prem {
+  border-color: rgba(230, 178, 68, 0.55);
+  background: rgba(54, 34, 14, 0.35);
+}
+
 /* RESPONSIVE SMALL LANDSCAPE / PORTRAIT */
 @media (max-width: 720px) {
   .start-body { grid-template-columns: 1fr; }
   .inv-layout, .mounts-layout, .world-map-wrap, .trade-layout { grid-template-columns: 1fr; }
   .skill-branches { grid-template-columns: 1fr; }
   .hud-left-stack { width: 162px; }
+  .bp-tier-row { grid-template-columns: 44px 1fr 1fr; }
 }

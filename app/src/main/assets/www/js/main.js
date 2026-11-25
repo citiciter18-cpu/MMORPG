@@ -60,8 +60,9 @@
         statPoints: 2,
         skillPoints: 2,
         pvpRating: 1000,
+        karma: 0,
         attributes: { str: 8, vit: 8, int: 4, agi: 5, lck: 5 },
-        appearance: { hair: '#151829', cloak: '#c81d32', armor: '#1f2438', skin: '#f7d5b0', eye: '#ef4444' },
+        appearance: { hair: '#151829', hairStyle: 'spiky', cloak: '#c81d32', armor: '#1f2438', skin: '#f7d5b0', eye: '#ef4444' },
         equipment: {
           helmet: null, armor: null, weapon: null, offhand: null,
           cloak: null, amulet: null, ring: null, boots: null, artifact: null
@@ -119,6 +120,15 @@
         superSpeed: false
       },
       redeemedPromos: [],
+      cosmetics: {
+        owned: ['head_ninja', 'aura_arcane', 'title_novice'],
+        equipped: { head: null, back: null, aura: 'aura_arcane', trail: null, title: 'title_novice' },
+        hideHelmet: false
+      },
+      pets: { owned: {}, activeId: null },
+      daily: { streak: 0, lastDate: '' },
+      battlePass: { xp: 0, premium: false, claimedFree: {}, claimedPrem: {}, quests: {} },
+      arenaTokens: 0,
       pvpEnabled: false,
       activeDuelBotId: null,
       duelStartTime: 0,
@@ -127,7 +137,10 @@
         uiScale: 1,
         autoLoot: true,
         lowFx: false,
-        haptics: true
+        haptics: true,
+        audioMuted: false,
+        musicVol: 0.32,
+        sfxVol: 0.55
       },
       computedStats: {
         atk: 24, def: 10, crit: 12, speed: 155,
@@ -199,6 +212,25 @@
     crit += (learned.p_deadly_crit || 0) * 4;
     speed += (learned.p_wind_step || 0) * 10;
     goldBonusPct += (learned.p_treasure_hunter || 0) * 8;
+
+    // Battle Pet passive bonuses
+    if (window.Activities && window.Activities.getPetStatBonuses) {
+      const pb = window.Activities.getPetStatBonuses();
+      if (pb.atkPct) atkPctBonus += pb.atkPct;
+      if (pb.defPct) defPctBonus += pb.defPct;
+      if (pb.hpPct) hpPctBonus += pb.hpPct;
+      if (pb.crit) crit += pb.crit;
+      if (pb.speedPct) speed = Math.round(speed * (1 + pb.speedPct));
+      if (pb.goldBonusPct) goldBonusPct += pb.goldBonusPct;
+    }
+
+    // Clan Fortress territory buffs
+    if (window.Activities && window.Activities.getTerritoryBuffs) {
+      const tb = window.Activities.getTerritoryBuffs();
+      if (tb.atkPct) atkPctBonus += tb.atkPct;
+      if (tb.defPct) defPctBonus += tb.defPct;
+      if (tb.goldBonusPct) goldBonusPct += tb.goldBonusPct;
+    }
 
     atk = Math.round((atk + (clanBonus.atk || 0)) * (1 + atkPctBonus));
     def = Math.round((def + (clanBonus.def || 0)) * (1 + defPctBonus));
@@ -313,7 +345,7 @@
       resolvedId = wsp.id;
     }
     const target = findPreferredTarget();
-    window.Combat.castSkill(resolvedId, target);
+    window.Combat.castSkill(window.GameState.player, resolvedId, target, window.GameState.computedStats);
   }
 
   function applyHudPreset(preset) {
@@ -389,19 +421,40 @@
     window.UI.toast('Расположение HUD сохранено!');
   }
 
+  function applyCloudSave(saveData) {
+    if (!saveData || !saveData.player) return false;
+    restoreFromSave(saveData);
+    window.GameState.started = true;
+    document.getElementById('startScreen').classList.add('hidden');
+    document.getElementById('hudLayer').classList.remove('hidden');
+    rebuildSkillBar();
+    window.MMO.saveProgress();
+    if (window.UI) window.UI.renderCurrentModal();
+    return true;
+  }
+
   window.GameAPI = {
     vibrate,
     rebuildSkillBar,
     setUiScale,
     enterHudEditMode,
     applyHudPreset,
-    resetHudLayout
+    resetHudLayout,
+    applyCloudSave
   };
 
   // =========================================================================
   // NEW HERO / LOAD SAVE INITIALIZATION
   // =========================================================================
   let selectedClass = 'warrior';
+  let selectedAppearance = {
+    skin: '#f7d5b0',
+    hair: '#151829',
+    hairStyle: 'spiky',
+    cloak: '#c81d32',
+    armor: '#1f2438',
+    eye: '#ef4444'
+  };
 
   function buildNewHero(name, classId) {
     const cls = STARTER_CLASSES[classId] || STARTER_CLASSES.warrior;
@@ -411,7 +464,7 @@
     p.name = (String(name || '').trim() || 'Герой').slice(0, 16);
     p.classId = classId;
     p.attributes = Object.assign({}, cls.attributes);
-    p.appearance = Object.assign({}, cls.appearance);
+    p.appearance = Object.assign({}, cls.appearance, selectedAppearance);
     p.skillBar = cls.skillBar.slice();
 
     // Equip starter gear (keep classic hero hair & dark-crimson look visible)
@@ -429,7 +482,7 @@
 
     // Init quests
     window.MMO.QUEST_DEFS.forEach(q => {
-      gs.quests[q.id] = { progress: 0, claimed: false };
+      gs.quests[q.id] = { prog: 0, claimed: false };
     });
 
     gs.recalcStats();
@@ -443,7 +496,10 @@
     if (data.player) Object.assign(gs.player, data.player);
     gs.player.isPlayer = true;
     if (!gs.player.attributes) gs.player.attributes = { str: 6, vit: 6, int: 5, agi: 5, lck: 5 };
-    if (!gs.player.appearance) gs.player.appearance = { hair: '#1a1b2e', cloak: '#b91c1c', armor: '#24293d' };
+    if (!gs.player.appearance) gs.player.appearance = { hair: '#151829', hairStyle: 'spiky', cloak: '#c81d32', armor: '#24293d', skin: '#f7d5b0', eye: '#ef4444' };
+    if (!gs.player.appearance.skin) gs.player.appearance.skin = '#f7d5b0';
+    if (!gs.player.appearance.hairStyle) gs.player.appearance.hairStyle = 'spiky';
+    if (typeof gs.player.karma !== 'number') gs.player.karma = 0;
     if (!gs.player.equipment) gs.player.equipment = {};
     if (!gs.player.skillCooldowns) gs.player.skillCooldowns = {};
     if (!Array.isArray(gs.player.skillBar) || gs.player.skillBar.length < 5) {
@@ -454,7 +510,8 @@
     if (Array.isArray(data.unlockedMounts) && data.unlockedMounts.length) gs.unlockedMounts = data.unlockedMounts;
     if (data.quests) gs.quests = data.quests;
     window.MMO.QUEST_DEFS.forEach(q => {
-      if (!gs.quests[q.id]) gs.quests[q.id] = { progress: 0, claimed: false };
+      if (!gs.quests[q.id]) gs.quests[q.id] = { prog: 0, claimed: false };
+      else if (typeof gs.quests[q.id].prog !== 'number') gs.quests[q.id].prog = gs.quests[q.id].progress || 0;
     });
     if (data.claimedAchievements) gs.claimedAchievements = data.claimedAchievements;
     if (data.stats) Object.assign(gs.stats, data.stats);
@@ -465,12 +522,22 @@
     gs.donateHistory = Array.isArray(data.donateHistory) ? data.donateHistory : [];
     if (data.adminBot) Object.assign(gs.adminBot, data.adminBot);
     gs.redeemedPromos = Array.isArray(data.redeemedPromos) ? data.redeemedPromos : [];
+    if (data.cosmetics) gs.cosmetics = data.cosmetics;
+    if (data.pets) gs.pets = data.pets;
+    if (data.daily) gs.daily = data.daily;
+    if (data.battlePass) gs.battlePass = data.battlePass;
+    gs.arenaTokens = Number(data.arenaTokens) || 0;
     if (data.settings) Object.assign(gs.settings, data.settings);
 
     gs.player.state = 'idle';
     gs.recalcStats();
     if (gs.player.hp <= 0) gs.player.hp = gs.player.maxHp;
     setUiScale(gs.settings.uiScale || 1);
+    if (window.GameAudio) {
+      if (typeof gs.settings.audioMuted === 'boolean') window.GameAudio.setMuted(gs.settings.audioMuted);
+      if (typeof gs.settings.musicVol === 'number') window.GameAudio.setMusicVol(gs.settings.musicVol);
+      if (typeof gs.settings.sfxVol === 'number') window.GameAudio.setSfxVol(gs.settings.sfxVol);
+    }
   }
 
   function enterWorld() {
@@ -481,8 +548,9 @@
     const defScale = window.innerWidth < 860 ? 0.82 : 0.95;
     setUiScale(window.GameState.settings.uiScale || defScale);
     loadHudLayout();
+    if (window.GameAudio) window.GameAudio.unlock();
     if (window.TelegramStars) window.TelegramStars.syncAdminBotEntity(true);
-    window.MMO.addChat('system', 'Мир', 'Добро пожаловать в BladeRealm! Сейф монет — кнопка «Банк».');
+    window.MMO.addChat('system', 'Мир', 'Добро пожаловать в BladeRealm! Косметика, Питомцы, Рейды, Арена и 7-Дней Награды доступны в Меню.');
     window.MMO.saveProgress();
   }
 
@@ -494,6 +562,14 @@
 
   function findPreferredTarget() {
     const p = window.GameState.player;
+    // Active Ranked Arena enemies priority
+    if (window.Activities && window.Activities.isInArena && window.Activities.isInArena()) {
+      const aHost = window.Activities.getInstanceHostiles();
+      if (aHost.length > 0) {
+        aHost.sort((a, b) => Math.hypot(a.x - p.x, a.y - p.y) - Math.hypot(b.x - p.x, b.y - p.y));
+        return aHost[0];
+      }
+    }
     // Active duel bot priority
     if (window.GameState.activeDuelBotId) {
       const db = window.Bots.byId(window.GameState.activeDuelBotId);
@@ -501,6 +577,12 @@
     }
     if (currentTarget && !currentTarget.dead && currentTarget.hp > 0) {
       if (Math.hypot(currentTarget.x - p.x, currentTarget.y - p.y) < 420) return currentTarget;
+    }
+    // Nearby Bounty Outlaw
+    if (window.Progression && window.Progression.OUTLAWS) {
+      for (const o of window.Progression.OUTLAWS) {
+        if (!o.dead && o.hp > 0 && Math.hypot(o.x - p.x, o.y - p.y) < 320) return o;
+      }
     }
     // Check hostile PvP remote players if PvP enabled & outside safe zone
     if (window.GameState.pvpEnabled && !window.World.getBiomeAt(p.x, p.y).safe && window.Multiplayer) {
@@ -728,6 +810,20 @@
     const wx = clientX + cam.x;
     const wy = clientY + cam.y;
 
+    // 0. Instance mode (Dungeon / Arena) -> tap enemies directly
+    if (window.Activities && window.Activities.isInInstance()) {
+      const hostiles = window.Activities.getInstanceHostiles();
+      for (const h of hostiles) {
+        if (h.dead || h.hp <= 0) continue;
+        if (Math.hypot(h.x - wx, h.y - wy) < 46) {
+          currentTarget = h;
+          doPrimaryAttack();
+          return;
+        }
+      }
+      return;
+    }
+
     // 1. Admin Bot tap
     const ab = window.GameState.adminBot;
     if (ab && ab.owned && ab.summoned && window.TelegramStars && window.TelegramStars.adminEntity) {
@@ -762,6 +858,18 @@
       if (Math.hypot(npc.x - wx, npc.y - wy) < 42) {
         window.UI.openModal(npc.action || npc.modal || 'shop');
         return;
+      }
+    }
+
+    // 4.5 PK Outlaw tap -> set target and attack
+    if (window.Progression && window.Progression.OUTLAWS) {
+      for (const o of window.Progression.OUTLAWS) {
+        if (o.dead) continue;
+        if (Math.hypot(o.x - wx, o.y - wy) < 42) {
+          currentTarget = o;
+          doPrimaryAttack();
+          return;
+        }
       }
     }
 
@@ -849,19 +957,54 @@
   }
 
   function quickDrink(tplId) {
-    const idx = window.GameState.inventory.findIndex(it => it && it.templateId === tplId);
-    if (idx < 0) {
+    const found = window.GameState.inventory.find(it => it && it.templateId === tplId);
+    if (!found) {
       window.UI.toast('Нет зелий! Купите в Магазине или скрафтите.');
       return;
     }
-    window.MMO.useConsumable(idx);
+    window.MMO.useConsumable(found.uid);
   }
 
   // =========================================================================
   // BIND STATIC DOM CONTROLS
   // =========================================================================
+  function renderStartAppearancePickers() {
+    const CD = window.CosmeticsData;
+    if (!CD) return;
+    const fillSwatches = (elId, list, key) => {
+      const box = document.getElementById(elId);
+      if (!box) return;
+      box.innerHTML = list.map(c =>
+        `<div class="start-swatch ${selectedAppearance[key] === c.hex ? 'active' : ''}" data-sw-val="${c.hex}" title="${c.name}" style="background:${c.hex};"></div>`
+      ).join('');
+      box.querySelectorAll('.start-swatch').forEach(sw => {
+        sw.onclick = () => {
+          selectedAppearance[key] = sw.dataset.swVal;
+          renderStartAppearancePickers();
+        };
+      });
+    };
+    fillSwatches('startSkinSwatches', CD.SKIN_COLORS, 'skin');
+    fillSwatches('startHairSwatches', CD.HAIR_COLORS, 'hair');
+    fillSwatches('startCloakSwatches', CD.CLOAK_COLORS, 'cloak');
+
+    const stBox = document.getElementById('startHairStyleRow');
+    if (stBox) {
+      stBox.innerHTML = CD.HAIR_STYLES.map(s =>
+        `<button class="start-style-btn ${selectedAppearance.hairStyle === s.id ? 'active' : ''}" data-hs="${s.id}">${s.name}</button>`
+      ).join('');
+      stBox.querySelectorAll('.start-style-btn').forEach(b => {
+        b.onclick = () => {
+          selectedAppearance.hairStyle = b.dataset.hs;
+          renderStartAppearancePickers();
+        };
+      });
+    }
+  }
+
   function bindStaticDom() {
-    // Class picker on start screen
+    // Class picker & appearance customizer on start screen
+    renderStartAppearancePickers();
     document.querySelectorAll('#classPicker .class-opt').forEach(btn => {
       btn.onclick = () => {
         selectedClass = btn.dataset.cls;
@@ -870,6 +1013,8 @@
         const info = STARTER_CLASSES[selectedClass];
         document.getElementById('startClassTitle').textContent = info.name;
         document.getElementById('startClassDesc').textContent = info.desc;
+        selectedAppearance.armor = info.appearance.armor;
+        selectedAppearance.eye = info.appearance.eye;
       };
     });
 
@@ -919,6 +1064,19 @@
       const next = scaleSteps.find(s => s > cur + 0.02) || scaleSteps[0];
       setUiScale(next);
     };
+    const audioBtn = document.getElementById('btnToggleAudio');
+    if (audioBtn) {
+      audioBtn.onclick = () => {
+        if (window.GameAudio) window.GameAudio.toggleMute();
+      };
+    }
+    const instExitBtn = document.getElementById('btnInstanceExit');
+    if (instExitBtn) {
+      instExitBtn.onclick = () => {
+        const b = window.Activities && window.Activities.getActiveInstanceBanner();
+        if (b && b.onExit) b.onExit();
+      };
+    }
 
     // Quest tracker collapse
     document.getElementById('toggleQuestTracker').onclick = () => {
@@ -1090,8 +1248,8 @@
     g.translate(72, 92);
     g.scale(2.1, 2.1);
     window.Sprites.drawCharacter(g, {
-      x: 0, y: 0, facingX: 1, state: 'idle', isPlayer: true, hideNameplate: true,
-      appearance: cls.appearance,
+      x: 0, y: 0, facingX: 1, state: 'idle', isPlayer: false, hideNameplate: true, showAura: true,
+      appearance: Object.assign({}, cls.appearance, selectedAppearance),
       equipment: {
         weapon: window.GameData.createWeaponItem(cls.weapon, 'rare', 1, 0, 1),
         armor: cls.armor ? window.GameData.createArmorItem(cls.armor, 'rare', 1, 0, 1) : null,
@@ -1130,6 +1288,23 @@
       if (!m.dead && m.isBoss) g.fillRect(Math.round(m.x * sx) - 2, Math.round(m.y * sy) - 2, 4, 4);
     });
 
+    // Clan Fortresses (gold squares)
+    if (window.Activities && window.Activities.FORTRESSES) {
+      window.Activities.FORTRESSES.forEach(f => {
+        g.fillStyle = f.ownerColor || '#fbbf24';
+        g.fillRect(Math.round(f.x * sx) - 2, Math.round(f.y * sy) - 2, 5, 5);
+      });
+    }
+
+    // Tracked Bounty Target (bright red pulse)
+    if (window.Progression && window.Progression.getTrackedTarget) {
+      const tr = window.Progression.getTrackedTarget();
+      if (tr) {
+        g.fillStyle = '#ef4444';
+        g.fillRect(Math.round(tr.x * sx) - 3, Math.round(tr.y * sy) - 3, 6, 6);
+      }
+    }
+
     // Remote Online Players (cyan / green if in party)
     if (window.Multiplayer) {
       window.Multiplayer.getRemotePlayers().forEach(rp => {
@@ -1158,6 +1333,9 @@
     } else {
       clanEl.classList.add('hidden');
     }
+
+    const pkEl = document.getElementById('hudPkBadge');
+    if (pkEl) pkEl.classList.toggle('hidden', (p.karma || 0) > -50);
 
     const pvpBadge = document.getElementById('hudPvpBadge');
     pvpBadge.textContent = gs.pvpEnabled ? 'PvP' : 'МИР';
@@ -1190,9 +1368,19 @@
     if (gs.adminBot && gs.adminBot.owned) admBtn.classList.remove('hidden');
     else admBtn.classList.add('hidden');
 
-    // Zone & coords
-    const biome = window.World.getBiomeAt(p.x, p.y);
-    document.getElementById('hudZoneName').textContent = biome.name;
+    // Zone & coords + Instance Banner
+    const instBanner = window.Activities && window.Activities.getActiveInstanceBanner();
+    const ibEl = document.getElementById('instanceBanner');
+    if (instBanner && ibEl) {
+      ibEl.classList.remove('hidden');
+      document.getElementById('instanceBannerTitle').textContent = instBanner.title;
+      document.getElementById('instanceBannerSub').textContent = instBanner.sub;
+      document.getElementById('hudZoneName').textContent = instBanner.title;
+    } else {
+      if (ibEl) ibEl.classList.add('hidden');
+      const biome = window.World.getBiomeAt(p.x, p.y);
+      document.getElementById('hudZoneName').textContent = biome.name;
+    }
     document.getElementById('hudCoords').textContent = Math.round(p.x) + ', ' + Math.round(p.y);
 
     // Quick potion counts
@@ -1230,19 +1418,26 @@
     const qtBody = document.getElementById('questTrackerBody');
     let readyQuests = 0;
     const activeQs = window.MMO.QUEST_DEFS.filter(q => {
-      const stQ = gs.quests[q.id] || { progress: 0, claimed: false };
-      if (!stQ.claimed && stQ.progress >= q.goal) readyQuests++;
+      const stQ = gs.quests[q.id] || { prog: 0, claimed: false };
+      const curP = typeof stQ.prog === 'number' ? stQ.prog : (stQ.progress || 0);
+      if (!stQ.claimed && curP >= q.need) readyQuests++;
       return !stQ.claimed;
     }).slice(0, 3);
     qtBody.innerHTML = activeQs.length ? activeQs.map(q => {
-      const stQ = gs.quests[q.id] || { progress: 0 };
-      const done = stQ.progress >= q.goal;
-      return `<div class="qt-item ${done ? 'done' : ''}"><b>${q.title}</b> (${Math.min(stQ.progress, q.goal)}/${q.goal})</div>`;
+      const stQ = gs.quests[q.id] || { prog: 0 };
+      const curP = typeof stQ.prog === 'number' ? stQ.prog : (stQ.progress || 0);
+      const done = curP >= q.need;
+      return `<div class="qt-item ${done ? 'done' : ''}"><b>${q.title}</b> (${Math.min(curP, q.need)}/${q.need})</div>`;
     }).join('') : '<div class="qt-item done">Все задания выполнены!</div>';
 
     const bq = document.getElementById('badgeQuests');
     if (readyQuests > 0) { bq.textContent = readyQuests; bq.classList.remove('hidden'); }
     else bq.classList.add('hidden');
+
+    const bm = document.getElementById('badgeMenu');
+    if (bm && window.Progression && window.Progression.hasPendingRewards) {
+      bm.classList.toggle('hidden', !window.Progression.hasPendingRewards());
+    }
 
     // Party Widget (Real Online Party + Bot Party)
     const realMembers = (window.Multiplayer && window.Multiplayer.realParty && window.Multiplayer.realParty.members) || [];
@@ -1384,9 +1579,20 @@
       if (p.attackTimer <= 0) p.state = 'idle';
     }
 
-    // Clamp to world bounds
-    p.x = Math.max(36, Math.min(window.World.WIDTH - 36, p.x));
-    p.y = Math.max(36, Math.min(window.World.HEIGHT - 36, p.y));
+    // Clamp to world bounds (skip clamp when inside Dungeon/Arena instance coordinates)
+    const inInstance = window.Activities && (window.Activities.isInDungeon() || window.Activities.isInArena());
+    if (!inInstance) {
+      p.x = Math.max(36, Math.min(window.World.WIDTH - 36, p.x));
+      p.y = Math.max(36, Math.min(window.World.HEIGHT - 36, p.y));
+    }
+
+    // Cosmetic Footstep Trail particles while moving
+    if ((p.state === 'walk' || p.state === 'run') && gs.cosmetics && gs.cosmetics.equipped && gs.cosmetics.equipped.trail) {
+      if (Math.random() < dt * 16) {
+        const tDef = window.CosmeticsData && window.CosmeticsData.COSMETIC_BY_ID[gs.cosmetics.equipped.trail];
+        if (tDef) window.Combat.addParticles(p.x, p.y + 10, tDef.color, 2, 26);
+      }
+    }
 
     if (gs.settings.autoLoot) {
       window.Combat.lootNearby(96);
@@ -1428,6 +1634,8 @@
     window.Bots.update(dt);
     window.MMO.updateEconomy(dt);
     window.MMO.updateAuction(dt);
+    if (window.Activities) window.Activities.update(dt);
+    if (window.Progression) window.Progression.updateOutlaws(dt);
     if (window.TelegramStars) window.TelegramStars.updateAdminBot(dt);
     if (window.Multiplayer) window.Multiplayer.update(dt);
 
@@ -1436,24 +1644,37 @@
     const shake = window.Combat.shake || 0;
     const sx = shake > 0 ? (Math.random() - 0.5) * shake : 0;
     const sy = shake > 0 ? (Math.random() - 0.5) * shake : 0;
-    cam.x = Math.max(0, Math.min(window.World.WIDTH - cam.w, p.x - cam.w / 2)) + sx;
-    cam.y = Math.max(0, Math.min(window.World.HEIGHT - cam.h, p.y - cam.h / 2)) + sy;
+    const inInstance = window.Activities && (window.Activities.isInDungeon() || window.Activities.isInArena());
+    if (inInstance) {
+      cam.x = (p.x - cam.w / 2) + sx;
+      cam.y = (p.y - cam.h / 2) + sy;
+    } else {
+      cam.x = Math.max(0, Math.min(window.World.WIDTH - cam.w, p.x - cam.w / 2)) + sx;
+      cam.y = Math.max(0, Math.min(window.World.HEIGHT - cam.h, p.y - cam.h / 2)) + sy;
+    }
 
-    // Render World (crisp pixel art + proper drawWorldCombat pipeline)
+    // Render World (crisp pixel art + instance floor support)
     ctx.imageSmoothingEnabled = false;
     ctx.clearRect(0, 0, cam.w, cam.h);
     ctx.save();
     ctx.translate(-Math.round(cam.x), -Math.round(cam.y));
 
-    window.World.drawBackground(ctx, cam.x, cam.y, cam.w, cam.h, animTime);
-    window.World.drawPropsAndNpcs(ctx, cam.x, cam.y, cam.w, cam.h, animTime);
+    const drewInstance = window.Activities && window.Activities.drawInstanceFloor(ctx, animTime);
+    if (!drewInstance) {
+      window.World.drawBackground(ctx, cam.x, cam.y, cam.w, cam.h, animTime);
+      window.World.drawPropsAndNpcs(ctx, cam.x, cam.y, cam.w, cam.h, animTime);
+      window.Bots.drawAll(ctx, cam.x, cam.y, cam.w, cam.h, animTime);
+      if (window.Multiplayer) {
+        window.Multiplayer.drawAll(ctx, cam.x, cam.y, cam.w, cam.h, animTime);
+      }
+      if (window.Progression) {
+        window.Progression.drawOutlawsAndCompass(ctx, cam.x, cam.y, cam.w, cam.h, animTime);
+      }
+    }
 
-    // Smart Bots
-    window.Bots.drawAll(ctx, cam.x, cam.y, cam.w, cam.h, animTime);
-
-    // Real Online Players (Supabase Realtime)
-    if (window.Multiplayer) {
-      window.Multiplayer.drawAll(ctx, cam.x, cam.y, cam.w, cam.h, animTime);
+    // Clan Fortresses, Arena Fighters & Active Battle Pet
+    if (window.Activities) {
+      window.Activities.drawWorldOverlay(ctx, cam.x, cam.y, cam.w, cam.h, animTime);
     }
 
     // Local Player
@@ -1464,7 +1685,7 @@
       window.TelegramStars.drawAdminBot(ctx, animTime);
     }
 
-    // Telegraphs, Ground Loot (with player proximity labels), Monsters, Projectiles, VFX & Floating Damage Numbers
+    // Telegraphs, Ground Loot, Monsters, Projectiles, VFX & Floating Damage Numbers
     window.Combat.drawWorldCombat(ctx, cam.x, cam.y, cam.w, cam.h, animTime);
 
     ctx.restore();
@@ -1489,6 +1710,7 @@
   // =========================================================================
   function boot() {
     if (window.PixelIcons) window.PixelIcons.hydrateDom();
+    if (window.GameAudio) window.GameAudio.init();
     window.World.init();
     window.Combat.spawnInitialMonsters();
     window.Bots.init();

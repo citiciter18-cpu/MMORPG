@@ -965,20 +965,40 @@ window.Sprites = (function () {
     ctx.save();
     ctx.translate(Math.round(entity.x), Math.round(entity.y));
 
-    // Glowing Arcane Rune Circle beneath Hero (exact Ref Image 1 purple/crimson glow)
-    if (entity.isPlayer || entity.showAura || entity.buffShield > 0 || entity.buffHaste > 0 || entity.state === 'skill') {
+    // Glowing Cosmetic Aura Circle beneath Hero
+    const cosm = entity.cosmetics || (entity.isPlayer && window.GameState && window.GameState.cosmetics && window.GameState.cosmetics.equipped) || {};
+    const auraId = cosm.aura || (entity.isPlayer ? 'aura_arcane' : null);
+    if (auraId || entity.showAura || entity.buffShield > 0 || entity.buffHaste > 0 || entity.state === 'skill') {
       ctx.save();
-      const ringCol = entity.buffShield > 0 ? '#fbbf24' : (entity.buffHaste > 0 ? '#d946ef' : '#a855f7');
+      const auraColMap = {
+        aura_arcane: '#a855f7',
+        aura_frost: '#38bdf8',
+        aura_fire: '#f97316',
+        aura_void: '#c084fc',
+        aura_golden: '#fde047',
+        aura_starlight: '#67e8f9'
+      };
+      const ringCol = entity.buffShield > 0 ? '#fbbf24' : (entity.buffHaste > 0 ? '#d946ef' : (auraColMap[auraId] || '#a855f7'));
       const rW = isMounted ? 30 : 21;
       const rH = isMounted ? 11 : 7;
-      ctx.fillStyle = 'rgba(139, 92, 246, 0.18)';
+      ctx.fillStyle = ringCol + '2e';
       ctx.beginPath(); ctx.ellipse(0, 15, rW, rH, 0, 0, Math.PI * 2); ctx.fill();
       ctx.strokeStyle = ringCol;
-      ctx.lineWidth = entity.state === 'skill' ? 3 : 1.6;
+      ctx.lineWidth = entity.state === 'skill' ? 3 : 1.7;
       ctx.beginPath(); ctx.ellipse(0, 15, rW, rH, 0, 0, Math.PI * 2); ctx.stroke();
-      ctx.strokeStyle = '#e9d5ff';
+      ctx.strokeStyle = '#ffffff';
+      ctx.globalAlpha = 0.7;
       ctx.lineWidth = 1;
       ctx.beginPath(); ctx.ellipse(0, 15, rW * 0.72, rH * 0.72, 0, 0, Math.PI * 2); ctx.stroke();
+      // Orbiting pixel sparkles for special auras
+      if (auraId && auraId !== 'aura_arcane') {
+        for (let i = 0; i < 4; i++) {
+          const ang = animTime * 2.8 + (i * Math.PI) / 2;
+          const ox = Math.cos(ang) * rW;
+          const oy = 15 + Math.sin(ang) * rH;
+          px(ctx, ox - 1, oy - 1, 3, 3, i % 2 === 0 ? ringCol : '#ffffff');
+        }
+      }
       ctx.restore();
     }
 
@@ -1034,25 +1054,57 @@ window.Sprites = (function () {
     ctx.restore();
   }
 
+  function shadeHex(hex, factor) {
+    if (!hex || typeof hex !== 'string' || hex[0] !== '#' || hex.length !== 7) return hex || '#334155';
+    const r = Math.min(255, Math.max(0, Math.round(parseInt(hex.slice(1, 3), 16) * factor)));
+    const g = Math.min(255, Math.max(0, Math.round(parseInt(hex.slice(3, 5), 16) * factor)));
+    const b = Math.min(255, Math.max(0, Math.round(parseInt(hex.slice(5, 7), 16) * factor)));
+    return '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join('');
+  }
+
   function drawCharacterBody(ctx, entity, stride, bob, isMounted, isRunning, animTime) {
     const eq = entity.equipment || {};
-    const app = entity.appearance || { hair: '#151829', cloak: '#c81d32', armor: '#1f2438', skin: '#f7d5b0', eye: '#ef4444' };
+    const app = entity.appearance || { hair: '#151829', cloak: '#c81d32', armor: '#1f2438', skin: '#f7d5b0', eye: '#ef4444', hairStyle: 'spiky' };
+    const cosmState = entity.isPlayer && window.GameState && window.GameState.cosmetics;
+    const cosm = entity.cosmetics || (cosmState && cosmState.equipped) || {};
+    const hideHelmet = entity.hideHelmet || (cosmState && cosmState.hideHelmet);
     const out = '#090b14';
-    const cloakCol = (eq.cloak && eq.cloak.color) || app.cloak || '#c81d32';
-    const cloakDark = '#6b0f1d';
+    const cloakCol = app.cloak || (eq.cloak && eq.cloak.color) || '#c81d32';
+    const cloakDark = shadeHex(cloakCol, 0.58);
+    const cloakHi = shadeHex(cloakCol, 1.32);
     const armorCol = (eq.armor && eq.armor.color) || app.armor || '#1f2438';
     const armorHi = '#5b6891';
     const armorAcc = (eq.armor && eq.armor.accent) || '#ef4444';
     const bootsCol = (eq.boots && eq.boots.color) || '#2a334d';
+    const skinCol = app.skin || '#f7d5b0';
+    const skinShade = shadeHex(skinCol, 0.85);
 
-    // 1. MULTI-LAYER BILLOWING CRIMSON CAPE / WINGS (with crisp dark outline)
+    // 0. COSMETIC WINGS BEHIND BACK
+    const wingFlap = Math.sin(animTime * (isRunning ? 14 : 6)) * 4;
+    if (cosm.back === 'back_dragon_wings' || cosm.back === 'back_phoenix_wings' || cosm.back === 'back_angel_wings' || cosm.back === 'back_shadow_wings') {
+      const wMain = cosm.back === 'back_angel_wings' ? '#f8fafc' : (cosm.back === 'back_phoenix_wings' ? '#f97316' : (cosm.back === 'back_shadow_wings' ? '#6d28d9' : '#dc2626'));
+      const wHi = cosm.back === 'back_angel_wings' ? '#bae6fd' : (cosm.back === 'back_phoenix_wings' ? '#fde047' : (cosm.back === 'back_shadow_wings' ? '#c084fc' : '#f87171'));
+      // Left & Right articulated pixel wings
+      px(ctx, -27, -23 + wingFlap, 18, 17, out);
+      px(ctx, -25, -21 + wingFlap, 14, 13, wMain);
+      px(ctx, -24, -20 + wingFlap, 8, 5, wHi);
+      px(ctx, -29, -15 + wingFlap * 1.2, 8, 9, out);
+      px(ctx, -28, -14 + wingFlap * 1.2, 6, 7, wHi);
+    }
+
+    // 1. MULTI-LAYER BILLOWING CAPE (tinted with user's chosen Cape color!)
     const capeSway = Math.sin(animTime * (isRunning ? 14 : 4)) * (isRunning ? 5.5 : 2.2);
     px(ctx, -16 - capeSway * 0.5, -10, 14, 23, out);
     px(ctx, -19 - capeSway, 1, 11, 14, out);
     px(ctx, -15 - capeSway * 0.5, -9, 12, 21, cloakDark);
     px(ctx, -14 - capeSway * 0.4, -8, 10, 18, cloakCol);
     px(ctx, -18 - capeSway, 2, 9, 12, cloakCol);
-    px(ctx, -16 - capeSway * 0.8, 4, 3, 8, '#f87171'); // highlight fold
+    px(ctx, -16 - capeSway * 0.8, 4, 3, 8, cloakHi);
+    if (cosm.back === 'back_scarf_gold') {
+      px(ctx, -22 - capeSway, -9, 13, 5, out);
+      px(ctx, -21 - capeSway, -8, 11, 3, '#fbbf24');
+      px(ctx, -20 - capeSway, -8, 4, 1, '#fef08a');
+    }
     if (eq.cloak && eq.cloak.templateId === 'cloak_wings') {
       px(ctx, -23 - capeSway * 0.4, -16, 12, 15, out);
       px(ctx, -22 - capeSway * 0.4, -15, 10, 13, '#6d28d9');
@@ -1061,13 +1113,11 @@ window.Sprites = (function () {
 
     // 2. OUTLINED LEGS, ARMORED GREAVES & KNEE GUARDS
     if (!isMounted) {
-      // Back leg
       px(ctx, -7 + stride, 2, 7, 13, out);
       px(ctx, -6 + stride, 3, 5, 11, '#111626');
-      px(ctx, -6 + stride, 6, 5, 2, armorAcc); // knee trim
+      px(ctx, -6 + stride, 6, 5, 2, armorAcc);
       px(ctx, -6 + stride, 9, 6, 5, bootsCol);
       px(ctx, -5 + stride, 10, 2, 3, armorHi);
-      // Front leg
       px(ctx, 1 - stride, 2, 7, 13, out);
       px(ctx, 2 - stride, 3, 5, 11, '#182036');
       px(ctx, 2 - stride, 6, 5, 2, armorAcc);
@@ -1079,22 +1129,19 @@ window.Sprites = (function () {
       px(ctx, -1, 5, 3, 3, armorHi);
     }
 
-    // 3. DETAILED DARK-STEEL ARMORED TORSO, PAULDRONS, BELT & CRIMSON CORE
+    // 3. DETAILED DARK-STEEL ARMORED TORSO, PAULDRONS, BELT & CORE
     px(ctx, -9, -12, 18, 17, out);
     px(ctx, -8, -11, 16, 15, armorCol);
-    px(ctx, -6, -10, 12, 11, '#2b3452'); // breastplate sheen
-    // Crimson Chest Crest & V-trim (matching Reference Image 1)
+    px(ctx, -6, -10, 12, 11, '#2b3452');
     px(ctx, -4, -9, 8, 2, armorAcc);
     px(ctx, -3, -7, 6, 6, '#14192b');
     px(ctx, -2, -6, 4, 4, armorAcc);
     px(ctx, -1, -5, 2, 2, '#fca5a5');
-    // Ornate Metallic Belt & Crimson Tassets
     px(ctx, -8, 1, 16, 3, '#111524');
     px(ctx, -2, 1, 4, 3, '#fbbf24');
     px(ctx, -7, 3, 4, 3, armorCol);
     px(ctx, 3, 3, 4, 3, armorCol);
 
-    // Layered Spiked Shoulder Pauldrons (Left & Right)
     px(ctx, -12, -12, 7, 8, out);
     px(ctx, -11, -11, 5, 6, '#2a3350');
     px(ctx, -11, -11, 5, 2, armorHi);
@@ -1105,23 +1152,20 @@ window.Sprites = (function () {
     px(ctx, 6, -11, 5, 2, armorHi);
     px(ctx, 7, -8, 3, 2, armorAcc);
 
-    // Armored Front Gauntlet Arm
     px(ctx, 5, -5, 6, 8, out);
     px(ctx, 6, -4, 4, 6, '#2a3350');
     px(ctx, 6, -1, 4, 2, armorAcc);
 
-    // Flowing Crimson Neck Scarf (signature knight look from Ref Image 1)
+    // Flowing Neck Scarf matching Cape Color
     px(ctx, -9, -13, 18, 4, out);
     px(ctx, -8, -12, 16, 3, cloakCol);
-    px(ctx, -5, -12, 7, 1, '#f87171');
+    px(ctx, -5, -12, 7, 1, cloakHi);
 
-    // 4. ANIME-PIXEL HEAD, FACE & EXPRESSIVE GLOWING EYES
+    // 4. ANIME-PIXEL HEAD, FACE (Dynamic Skin Tone) & EXPRESSIVE GLOWING EYES
     px(ctx, -8, -26, 16, 15, out);
-    px(ctx, -7, -25, 14, 13, app.skin || '#f7d5b0');
-    // Subtle cheek/chin shading
-    px(ctx, -7, -14, 14, 2, '#dfb388');
-    px(ctx, -7, -25, 2, 11, '#e5bc92');
-    // Expressive Fierce Eyes (left & right with dark lash, crimson iris, white highlight)
+    px(ctx, -7, -25, 14, 13, skinCol);
+    px(ctx, -7, -14, 14, 2, skinShade);
+    px(ctx, -7, -25, 2, 11, skinShade);
     px(ctx, -1, -20, 4, 4, '#0f1220');
     px(ctx, 0, -19, 3, 3, app.eye || '#ef4444');
     px(ctx, 0, -19, 1, 1, '#ffffff');
@@ -1129,8 +1173,8 @@ window.Sprites = (function () {
     px(ctx, 4, -19, 2, 3, app.eye || '#ef4444');
     px(ctx, 4, -19, 1, 1, '#ffffff');
 
-    // 5. DETAILED 3-TONE SPIKY DARK HAIR OR KNIGHT HELMET
-    if (eq.helmet) {
+    // 5. DETAILED HAIR (4 Styles & Any Color) OR KNIGHT HELMET
+    if (eq.helmet && !hideHelmet && !cosm.head) {
       px(ctx, -10, -31, 20, 12, out);
       px(ctx, -9, -30, 18, 10, eq.helmet.color || '#334155');
       px(ctx, -7, -32, 14, 4, eq.helmet.accent || '#ef4444');
@@ -1138,27 +1182,82 @@ window.Sprites = (function () {
       px(ctx, -10, -21, 4, 9, eq.helmet.color || '#334155');
     } else {
       const h = app.hair || '#151829';
-      const hHi = '#3b456b';
-      // Dark outline silhouette for dramatic anime spikes
-      px(ctx, -10, -31, 20, 10, out);
-      px(ctx, -12, -27, 5, 10, out);
-      px(ctx, -7, -34, 6, 5, out);
-      px(ctx, -1, -35, 7, 6, out);
-      px(ctx, 5, -32, 6, 7, out);
-      // Base spiky hair fill
-      px(ctx, -9, -30, 18, 8, h);
-      px(ctx, -11, -26, 4, 8, h);
-      px(ctx, -6, -33, 4, 5, h);
-      px(ctx, 0, -34, 5, 6, h);
-      px(ctx, 5, -31, 5, 6, h);
-      // Front bangs framing forehead & eyes
-      px(ctx, -6, -24, 3, 5, h);
-      px(ctx, -1, -24, 3, 4, h);
-      px(ctx, 4, -24, 3, 3, h);
-      // Cool pixel-art hair highlights
-      px(ctx, -5, -30, 3, 2, hHi);
-      px(ctx, 1, -31, 3, 2, hHi);
-      px(ctx, 5, -28, 2, 2, hHi);
+      const hHi = shadeHex(h, 1.45);
+      const style = app.hairStyle || 'spiky';
+      if (style === 'long') {
+        px(ctx, -11, -30, 22, 10, out);
+        px(ctx, -12, -26, 5, 16, out);
+        px(ctx, -10, -29, 20, 8, h);
+        px(ctx, -11, -25, 4, 14, h);
+        px(ctx, -6, -24, 3, 5, h); px(ctx, -1, -24, 3, 4, h); px(ctx, 4, -24, 3, 4, h);
+        px(ctx, -6, -28, 4, 2, hHi); px(ctx, 2, -28, 4, 2, hHi);
+      } else if (style === 'mohawk') {
+        px(ctx, -9, -29, 18, 6, out);
+        px(ctx, -3, -37, 7, 10, out);
+        px(ctx, -8, -28, 16, 4, h);
+        px(ctx, -2, -36, 5, 9, h);
+        px(ctx, -1, -35, 3, 4, hHi);
+      } else if (style === 'bob') {
+        px(ctx, -10, -30, 20, 10, out);
+        px(ctx, -10, -23, 4, 9, out);
+        px(ctx, 6, -23, 4, 7, out);
+        px(ctx, -9, -29, 18, 8, h);
+        px(ctx, -9, -22, 3, 7, h);
+        px(ctx, 6, -22, 3, 5, h);
+        px(ctx, -5, -28, 4, 2, hHi); px(ctx, 2, -28, 3, 2, hHi);
+      } else {
+        // Default spiky anime hair
+        px(ctx, -10, -31, 20, 10, out);
+        px(ctx, -12, -27, 5, 10, out);
+        px(ctx, -7, -34, 6, 5, out);
+        px(ctx, -1, -35, 7, 6, out);
+        px(ctx, 5, -32, 6, 7, out);
+        px(ctx, -9, -30, 18, 8, h);
+        px(ctx, -11, -26, 4, 8, h);
+        px(ctx, -6, -33, 4, 5, h);
+        px(ctx, 0, -34, 5, 6, h);
+        px(ctx, 5, -31, 5, 6, h);
+        px(ctx, -6, -24, 3, 5, h);
+        px(ctx, -1, -24, 3, 4, h);
+        px(ctx, 4, -24, 3, 3, h);
+        px(ctx, -5, -30, 3, 2, hHi);
+        px(ctx, 1, -31, 3, 2, hHi);
+        px(ctx, 5, -28, 2, 2, hHi);
+      }
+    }
+
+    // 5B. COSMETIC HEADWEAR OVERLAY
+    if (cosm.head === 'head_royal_crown') {
+      px(ctx, -9, -38, 18, 8, out);
+      px(ctx, -8, -34, 16, 4, '#fbbf24');
+      px(ctx, -8, -37, 3, 4, '#fde047'); px(ctx, -2, -39, 4, 6, '#fde047'); px(ctx, 5, -37, 3, 4, '#fde047');
+      px(ctx, -1, -34, 2, 2, '#ef4444'); px(ctx, -6, -33, 2, 2, '#38bdf8'); px(ctx, 4, -33, 2, 2, '#38bdf8');
+    } else if (cosm.head === 'head_demon_horns') {
+      px(ctx, -12, -37, 5, 9, out); px(ctx, 7, -37, 5, 9, out);
+      px(ctx, -11, -36, 3, 7, '#dc2626'); px(ctx, 8, -36, 3, 7, '#dc2626');
+      px(ctx, -11, -36, 2, 3, '#fde047'); px(ctx, 9, -36, 2, 3, '#fde047');
+    } else if (cosm.head === 'head_angel_halo') {
+      const hb = Math.sin(animTime * 5) * 1.5;
+      ctx.save();
+      ctx.strokeStyle = '#fde047';
+      ctx.lineWidth = 2.4;
+      ctx.beginPath(); ctx.ellipse(0, -37 + hb, 10, 3.2, 0, 0, Math.PI * 2); ctx.stroke();
+      ctx.restore();
+    } else if (cosm.head === 'head_mage_hat') {
+      px(ctx, -14, -31, 28, 4, out); px(ctx, -13, -30, 26, 2, '#581c87');
+      px(ctx, -8, -42, 16, 12, out); px(ctx, -7, -41, 14, 10, '#6d28d9');
+      px(ctx, -3, -46, 8, 6, out); px(ctx, -2, -45, 6, 4, '#7c3aed');
+      px(ctx, -7, -33, 14, 2, '#fbbf24');
+    } else if (cosm.head === 'head_wolf_mask') {
+      px(ctx, -8, -23, 16, 6, out); px(ctx, -7, -22, 14, 4, '#e2e8f0');
+      px(ctx, -1, -21, 3, 2, '#38bdf8'); px(ctx, 4, -21, 2, 2, '#38bdf8');
+    } else if (cosm.head === 'head_ninja') {
+      px(ctx, -9, -25, 18, 4, out); px(ctx, -8, -24, 16, 2, '#dc2626');
+      px(ctx, -14 - capeSway * 0.3, -24, 6, 2, '#ef4444');
+    } else if (cosm.head === 'head_cat_ears') {
+      px(ctx, -9, -35, 5, 6, out); px(ctx, 4, -35, 5, 6, out);
+      px(ctx, -8, -34, 3, 4, '#f472b6'); px(ctx, 5, -34, 3, 4, '#f472b6');
+      px(ctx, -7, -33, 1, 2, '#fde047'); px(ctx, 6, -33, 1, 2, '#fde047');
     }
 
     // 6. OFFHAND SHIELD
@@ -1208,11 +1307,20 @@ window.Sprites = (function () {
     ctx.font = 'bold 10px sans-serif';
     ctx.textAlign = 'center';
 
+    const isPk = entity.isPk || (entity.karma || 0) <= -50;
     const tag = entity.clanTag ? '[' + entity.clanTag + '] ' : '';
-    const title = tag + entity.name + ' Ур.' + entity.level;
+    const pkPrefix = isPk ? '[PK] ' : '';
+    const title = pkPrefix + tag + entity.name + ' Ур.' + entity.level;
 
-    // Small pixel gold crown above Player nameplate (matching Ref Image 2!)
-    if (entity.isPlayer) {
+    // Cosmetic Title above nameplate
+    const cosm = entity.cosmetics || (entity.isPlayer && window.GameState && window.GameState.cosmetics && window.GameState.cosmetics.equipped) || {};
+    const titleObj = cosm.title && window.CosmeticsData && window.CosmeticsData.COSMETIC_BY_ID[cosm.title];
+    if (titleObj) {
+      ctx.font = 'bold 9px sans-serif';
+      ctx.fillStyle = titleObj.color || '#fde047';
+      ctx.fillText('<' + titleObj.name + '>', 0, yOff - 20);
+      ctx.font = 'bold 10px sans-serif';
+    } else if (entity.isPlayer) {
       px(ctx, -6, yOff - 26, 12, 6, '#090b14');
       px(ctx, -5, -1 + yOff - 24, 2, 4, '#fbbf24');
       px(ctx, -1, -2 + yOff - 24, 2, 5, '#fde047');
@@ -1220,19 +1328,72 @@ window.Sprites = (function () {
       px(ctx, -5, yOff - 22, 10, 2, '#f59e0b');
     }
 
-    ctx.fillStyle = 'rgba(8, 12, 24, 0.78)';
+    if (entity.bountyGold) {
+      ctx.font = 'bold 9px sans-serif';
+      ctx.fillStyle = '#fbbf24';
+      ctx.fillText('НАГРАДА: ' + entity.bountyGold + ' зол.', 0, yOff - 20);
+      ctx.font = 'bold 10px sans-serif';
+    }
+
+    ctx.fillStyle = isPk ? 'rgba(69, 10, 10, 0.88)' : 'rgba(8, 12, 24, 0.78)';
     const tw = ctx.measureText(title).width + 10;
     ctx.fillRect(-tw / 2, yOff - 16, tw, 13);
 
-    ctx.fillStyle = entity.isPlayer ? '#fde047' : (entity.inParty ? '#38bdf8' : (entity.inDuel ? '#ff6b77' : '#e2e8f0'));
+    ctx.fillStyle = isPk ? '#ff4d5a' : (entity.isPlayer ? '#fde047' : (entity.inParty ? '#38bdf8' : (entity.inDuel ? '#ff6b77' : '#e2e8f0')));
     ctx.fillText(title, 0, yOff - 6);
 
     const bw = 40;
     const pct = Math.max(0, Math.min(1, entity.hp / Math.max(1, entity.maxHp)));
     ctx.fillStyle = '#090d1a';
     ctx.fillRect(-bw / 2 - 1, yOff - 1, bw + 2, 6);
-    ctx.fillStyle = entity.isPlayer ? '#22c55e' : (entity.inDuel ? '#ef4444' : '#38bdf8');
+    ctx.fillStyle = isPk ? '#ef4444' : (entity.isPlayer ? '#22c55e' : (entity.inDuel ? '#ef4444' : '#38bdf8'));
     ctx.fillRect(-bw / 2, yOff, bw * pct, 4);
+    ctx.restore();
+  }
+
+  // =========================================================================
+  // BATTLE PETS PIXEL-ART RENDERER (All 5 Pets)
+  // =========================================================================
+  function drawPet(ctx, petDef, petEnt, petLv, animTime) {
+    if (!petDef || !petEnt) return;
+    const out = '#090b14';
+    const bob = Math.sin(animTime * 6.5) * 3.5;
+    const facing = (petEnt.facingX || 1) < 0 ? -1 : 1;
+    ctx.save();
+    ctx.translate(Math.round(petEnt.x), Math.round(petEnt.y));
+    ctx.fillStyle = 'rgba(0,0,0,0.38)';
+    ctx.beginPath(); ctx.ellipse(0, 12, 9, 3.5, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.save();
+    ctx.scale(facing, 1);
+    ctx.translate(0, Math.round(bob));
+
+    if (petDef.id === 'pet_dragon' || petDef.id === 'pet_phoenix') {
+      const flap = Math.sin(animTime * 14) * 4;
+      px(ctx, -11, -11 + flap, 10, 8, out); px(ctx, -10, -10 + flap, 8, 6, petDef.accent);
+      px(ctx, -7, -6, 14, 12, out); px(ctx, -6, -5, 12, 10, petDef.color);
+      px(ctx, -3, -2, 7, 5, petDef.accent);
+      px(ctx, 2, -9, 9, 8, out); px(ctx, 3, -8, 7, 6, petDef.color);
+      px(ctx, 7, -6, 2, 2, '#fef08a');
+    } else if (petDef.id === 'pet_wolf') {
+      px(ctx, -11, -3, 18, 10, out); px(ctx, -10, -2, 16, 8, petDef.color);
+      px(ctx, 3, -9, 9, 8, out); px(ctx, 4, -8, 7, 6, petDef.accent);
+      px(ctx, 5, -12, 3, 4, petDef.color); px(ctx, 8, -6, 2, 2, '#0f172a');
+    } else if (petDef.id === 'pet_golem') {
+      px(ctx, -9, -9, 18, 16, out); px(ctx, -8, -8, 16, 14, petDef.color);
+      px(ctx, -4, -5, 8, 7, petDef.accent); px(ctx, -2, -3, 4, 3, '#ffffff');
+    } else {
+      // Celestial Cat
+      px(ctx, -7, -6, 14, 12, out); px(ctx, -6, -5, 12, 10, petDef.color);
+      px(ctx, -7, -10, 4, 5, out); px(ctx, 3, -10, 4, 5, out);
+      px(ctx, -6, -9, 2, 3, petDef.accent); px(ctx, 4, -9, 2, 3, petDef.accent);
+      px(ctx, -3, -3, 2, 2, '#0f172a'); px(ctx, 2, -3, 2, 2, '#0f172a');
+    }
+    ctx.restore();
+
+    ctx.font = 'bold 8px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillStyle = petDef.accent || '#fde047';
+    ctx.fillText(petDef.name + ' Ур.' + (petLv || 1), 0, -16 + bob * 0.4);
     ctx.restore();
   }
 
@@ -1416,6 +1577,7 @@ window.Sprites = (function () {
     drawWeaponShape,
     getItemIcon,
     drawMount,
+    drawPet,
     drawGroundLoot,
     drawCharacter,
     drawMonster

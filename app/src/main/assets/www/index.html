@@ -48,11 +48,30 @@
             </button>
           </div>
 
+          <div class="start-custom-grid pixel-inset">
+            <div class="start-custom-row">
+              <span class="start-custom-lbl">Кожа</span>
+              <div id="startSkinSwatches" class="start-swatch-row"></div>
+            </div>
+            <div class="start-custom-row">
+              <span class="start-custom-lbl">Волосы</span>
+              <div id="startHairSwatches" class="start-swatch-row"></div>
+            </div>
+            <div class="start-custom-row">
+              <span class="start-custom-lbl">Причёска</span>
+              <div id="startHairStyleRow" class="start-style-row"></div>
+            </div>
+            <div class="start-custom-row">
+              <span class="start-custom-lbl">Плащ</span>
+              <div id="startCloakSwatches" class="start-swatch-row"></div>
+            </div>
+          </div>
+
           <div class="start-features">
-            <span>10 Биомов</span>
-            <span>23 Оружия T1–T8</span>
-            <span>Онлайн Пати и Обмен</span>
-            <span>PvP Лут и Банк</span>
+            <span>Косметика и Питомцы</span>
+            <span>Рейд-Данжи и Арена</span>
+            <span>Войны Кланов</span>
+            <span>8-bit Звук и Облако</span>
           </div>
 
           <div class="start-actions">
@@ -79,6 +98,7 @@
         <div class="hud-name-row">
           <span id="hudName" class="hud-name">Герой</span>
           <span id="hudClanTag" class="hud-clan-tag hidden"></span>
+          <span id="hudPkBadge" class="hud-pk-badge hidden">PK</span>
           <span id="hudPvpBadge" class="hud-pvp-badge off">МИР</span>
           <span id="hudOnlineBadge" class="hud-online-badge">Онлайн: 1</span>
           <span id="hudFps" class="hud-fps">60</span>
@@ -181,6 +201,15 @@
       </div>
     </div>
 
+    <!-- INSTANCE BANNER (RAID DUNGEON / RANKED ARENA) -->
+    <div id="instanceBanner" class="instance-banner pixel-frame hidden">
+      <div>
+        <div id="instanceBannerTitle" class="instance-banner-title">Рейд</div>
+        <div id="instanceBannerSub" class="instance-banner-sub">Волна 1/3</div>
+      </div>
+      <button id="btnInstanceExit" class="pixel-btn btn-sm btn-crimson">Выйти</button>
+    </div>
+
     <!-- REAL-TIME INVITE BANNER (PARTY / TRADE) -->
     <div id="netInviteBanner" class="net-invite-banner pixel-frame hidden">
       <img class="px-ico px-ico-sm" data-px-icon="online" data-px-size="20" alt="" />
@@ -208,6 +237,10 @@
         <button id="btnQuickScale" class="mini-tool-btn" title="Масштаб интерфейса">
           <img class="px-ico px-ico-xs" data-px-icon="scale" data-px-size="14" alt="" />
           <span id="btnQuickScaleText">85%</span>
+        </button>
+        <button id="btnToggleAudio" class="mini-tool-btn" title="8-bit музыка и звук">
+          <img id="hudAudioIcon" class="px-ico px-ico-xs" data-px-icon="audio_on" data-px-size="14" alt="" />
+          <span id="btnToggleAudioText">Звук</span>
         </button>
       </div>
     </div>
@@ -359,7 +392,9 @@
   <script src="js/data/monsters.js"></script>
   <script src="js/data/mounts.js"></script>
   <script src="js/data/skills.js"></script>
+  <script src="js/data/cosmetics_pets.js"></script>
   <script src="js/engine/icons.js"></script>
+  <script src="js/systems/audio.js"></script>
   <script src="js/engine/sprites.js"></script>
   <script src="js/world/world.js"></script>
   <script src="js/engine/combat.js"></script>
@@ -367,6 +402,10 @@
   <script src="js/systems/mmo.js"></script>
   <script src="js/systems/telegram.js"></script>
   <script src="js/systems/multiplayer.js"></script>
+  <script src="js/systems/cloudsave.js"></script>
+  <script src="js/systems/activities.js"></script>
+  <script src="js/systems/progression.js"></script>
+  <script src="js/ui/modals_extra.js"></script>
   <script src="js/ui/modals.js"></script>
   <script src="js/main.js"></script>
 </body>

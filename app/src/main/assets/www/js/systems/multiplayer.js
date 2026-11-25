@@ -228,6 +228,9 @@ window.Multiplayer = (function () {
       partyId: realParty.id || null,
       mountedId: p.mountedId || null,
       appearance: p.appearance || {},
+      cosmetics: (window.GameState.cosmetics && window.GameState.cosmetics.equipped) || {},
+      hideHelmet: Boolean(window.GameState.cosmetics && window.GameState.cosmetics.hideHelmet),
+      karma: p.karma || 0,
       weaponType: w ? w.weaponType : 'sword',
       weaponName: w ? w.name : 'Без оружия',
       weaponColor: w ? w.color : '#e53935',
@@ -287,6 +290,9 @@ window.Multiplayer = (function () {
     rp.partyId = data.partyId || null;
     rp.mountedId = data.mountedId || null;
     if (data.appearance) rp.appearance = data.appearance;
+    if (data.cosmetics) rp.cosmetics = data.cosmetics;
+    rp.hideHelmet = Boolean(data.hideHelmet);
+    if (typeof data.karma === 'number') rp.karma = data.karma;
     rp.equipment.weapon = {
       category: 'weapon',
       name: data.weaponName || 'Оружие',
@@ -863,6 +869,9 @@ window.Multiplayer = (function () {
     }
     p.pvpRating = (p.pvpRating || 1000) + 30;
     window.GameState.stats.duelsWon = (window.GameState.stats.duelsWon || 0) + 1;
+    if (window.Progression && window.Progression.onPlayerKilledTarget) {
+      window.Progression.onPlayerKilledTarget(msg.victimId || null, msg.victimName || 'Соперник', msg.victimKarma || 0);
+    }
     window.MMO.saveProgress();
     window.MMO.addChat('system', 'PvP', 'Вы победили игрока ' + (msg.victimName || 'Соперник') + '! Добыча: +' + goldGain + ' монет и трофеи на земле!');
     if (window.UI) window.UI.toast('Победа в PvP! +' + goldGain + ' монет + лут на земле!');
@@ -997,6 +1006,13 @@ window.Multiplayer = (function () {
         if (window.UI) window.UI.toast('Онлайн-лот продан! +' + net + ' монет!');
       }
       if (window.UI) window.UI.renderCurrentModal();
+    } else if (evName === 'fort_capture' && window.Activities && window.Activities.applyRemoteFortressSync) {
+      window.Activities.applyRemoteFortressSync(data);
+    } else if (evName === 'bounty_post' && window.Progression && window.Progression.onRemoteBountyPost) {
+      window.Progression.onRemoteBountyPost(data);
+    } else if (evName === 'dungeon_start' && realParty.id && data.partyId === realParty.id && data.fromId !== myId) {
+      if (window.MMO) window.MMO.addChat('party', 'Рейд', (data.fromName || 'Лидер') + ' начал рейд «' + (data.dungeonName || 'Подземелье') + '»! Откройте Меню -> Рейд-Данжи.');
+      if (window.UI) window.UI.toast((data.fromName || 'Лидер') + ' зовёт в рейд: ' + (data.dungeonName || 'Данж') + '!');
     }
   }
 
@@ -1402,6 +1418,7 @@ window.Multiplayer = (function () {
     sendChat,
     sendPvpHit,
     sendPvpKillLoot,
+    sendCustomEvent: sendNetEvent,
     update,
     drawAll,
     getRemotePlayers,
